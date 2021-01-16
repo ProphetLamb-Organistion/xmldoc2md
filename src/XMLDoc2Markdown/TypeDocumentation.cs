@@ -149,7 +149,7 @@ namespace XMLDoc2Markdown
 
                     string valueDoc = memberDocElement?.Element("value")?.Value;
                     this.document.AppendParagraph(
-                        $"{propertyInfo.GetReturnType()?.Name}<br>{valueDoc}");
+                        $"{propertyInfo.GetReturnType()?.GetDisplayName()}<br>{valueDoc}");
                 }
 
                 this.WriteExceptions(memberDocElement);
@@ -200,7 +200,7 @@ namespace XMLDoc2Markdown
 
             string returnsDoc = memberDocElement?.Element("returns")?.Value;
             this.document.AppendParagraph(
-                $"{methodInfo.ReturnType.Name}<br>{returnsDoc}");
+                $"{methodInfo.ReturnType.GetDisplayName()}<br>{returnsDoc}");
         }
 
         private void WriteTypeParameters(MemberInfo memberInfo, XElement memberDocElement)
@@ -222,7 +222,7 @@ namespace XMLDoc2Markdown
                 {
                     string typeParamDoc = memberDocElement?.Elements("typeparam").FirstOrDefault(e => e.Attribute("name")?.Value == typeParam.Name)?.Value;
                     this.document.AppendParagraph(
-                        $"{new MarkdownInlineCode(typeParam.Name)}<br>{typeParamDoc}");
+                        $"{new MarkdownInlineCode(typeParam.GetDisplayName())}<br>{typeParamDoc}");
                 }
             }
         }

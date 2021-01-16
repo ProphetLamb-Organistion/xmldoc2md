@@ -62,7 +62,11 @@ namespace XMLDoc2Markdown
                 }
             }
 
-            string displayName = methodBase.MemberType == MemberTypes.Constructor ? methodBase.DeclaringType.Name : methodBase.Name;
+            string displayName = methodBase.MemberType == MemberTypes.Constructor ? methodBase.DeclaringType?.Name : methodBase.Name;
+            if (displayName is null)
+            {
+                throw new InvalidOperationException("Constructor members must have DeclaringType defined. Name cannot be null");
+            }
             int genericCharIndex = displayName.IndexOf('`');
             if (genericCharIndex > -1)
             {
@@ -73,12 +77,12 @@ namespace XMLDoc2Markdown
                 Type[] genericArguments = methodInfo1.GetGenericArguments();
                 if  (genericArguments.Length > 0)
                 {
-                    displayName += $"<{string.Join(", ", genericArguments.Select(a => a.Name))}>";
+                    displayName += $"<{string.Join(", ", genericArguments.Select(a => a.GetDisplayName()))}>";
                 }
             }
             ParameterInfo[] @params = methodBase.GetParameters();
             IEnumerable<string> paramsNames = @params
-                .Select(p => $"{(full ? p.ParameterType.GetSimplifiedName() : p.ParameterType.Name)}{(full ? $" {p.Name}" : null)}");
+                .Select(p => $"{(full ? p.ParameterType.GetSimplifiedName() : p.ParameterType.GetDisplayName())}{(full ? $" {p.Name}" : null)}");
             displayName += $"({string.Join(", ", paramsNames)})";
             signature.Add(displayName);
 

@@ -35,7 +35,7 @@ namespace XMLDoc2Markdown
 
         internal static string GetSimplifiedName(this Type type)
         {
-            return simplifiedTypeNames.TryGetValue(type, out string simplifiedName) ? simplifiedName : type.Name;
+            return simplifiedTypeNames.TryGetValue(type, out string simplifiedName) ? simplifiedName : type.GetDisplayName();
         }
 
         internal static Visibility GetVisibility(this Type type)
@@ -104,7 +104,7 @@ namespace XMLDoc2Markdown
 
                 if (baseTypeAndInterfaces.Count > 0)
                 {
-                    signature.Add($": {string.Join(", ", baseTypeAndInterfaces.Select(t => t.Namespace != type.Namespace ? t.FullName : t.Name))}");
+                    signature.Add($": {string.Join(", ", baseTypeAndInterfaces.Select(t => t.Namespace != type.Namespace ? t.Namespace : String.Empty + t.GetDisplayName()))}");
                 }
             }
 
@@ -133,7 +133,7 @@ namespace XMLDoc2Markdown
             }
         }
 
-        internal static string GetMSDocsUrl(this Type type, string msdocsBaseUrl = "https://docs.microsoft.com/en-us/dotnet/api")
+        internal static string GetMSDocsUrl(this Type type, string msdocsBaseUrl = "https://docs.microsoft.com/en-us/")
         {
             if (type == null)
             {
@@ -144,7 +144,15 @@ namespace XMLDoc2Markdown
                 throw new InvalidOperationException($"{type.FullName} is not a mscorlib type.");
             }
 
-            return $"{msdocsBaseUrl}/{type.FullName.ToLower().Replace('`', '-')}";
+            return (type.FullName is null, type.Namespace is null) switch
+            {
+                (true, true) => // Navigate to search specifying that we are looking for API
+                    $"{msdocsBaseUrl}search/?terms=api%20{type.Name}&category=Reference&scope=.NET",
+                (true, false) => // Try to reconstruct from namespace, not guaranteed to hit.
+                    $"{msdocsBaseUrl}dotnet/api/{type.Namespace!.ToLower().Replace('`', '-')}.{type.Name.ToLower().Replace('`', '-')}",
+                _ => // Navigate to documentation
+                    $"{msdocsBaseUrl}dotnet/api/{type.FullName!.ToLower().Replace('`', '-')}"
+            };
         }
 
         internal static string GetInternalDocsUrl(this Type type, string rootUrl = "..")
