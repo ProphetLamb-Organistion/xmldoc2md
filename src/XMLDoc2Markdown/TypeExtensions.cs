@@ -1,7 +1,11 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Text;
+
 using Markdown;
 
 namespace XMLDoc2Markdown
@@ -113,16 +117,59 @@ namespace XMLDoc2Markdown
 
         internal static string GetDisplayName(this Type type)
         {
+            /*
+             * Convert generic type parameters from gravis notation to type notation.
+             *
+             * For classes:
+             *   Nested type inherit the generic type parameters of their parents. But these are not reflected in the Name property, only in FullName.
+             *   In these scenarios some declaring types (parentage) are necessary for the DisplayName.
+             */
+
             TypeInfo typeInfo = type.GetTypeInfo();
-            if (typeInfo.GenericTypeParameters.Length > 0)
+            StringBuilder sb = new StringBuilder(255);
+            List<Type> genericTypeSpecifiers = new List<Type>(typeInfo.GenericTypeParameters.Length + typeInfo.GenericTypeArguments.Length);
+            genericTypeSpecifiers.AddRange(typeInfo.GenericTypeParameters);
+            genericTypeSpecifiers.AddRange(typeInfo.GenericTypeArguments);
+
+            if (typeInfo.IsClass || typeInfo.IsValueType)
             {
-                string @base = type.Name.Substring(0, type.Name.IndexOf('`'));
-                return $"{@base}<{string.Join(", ", typeInfo.GenericTypeParameters.Select(t => t.GetDisplayName()))}>";
+                
+                if (typeInfo.IsNested)
+                {
+                    // Remove generic type parameters already defined in declaring types.
+                    TypeInfo? parentInfo = typeInfo.DeclaringType?.GetTypeInfo();
+                    while (!(parentInfo is null) && parentInfo.IsGenericType)
+                    {
+                        foreach (Type p in parentInfo.GenericTypeParameters)
+                        {
+                            genericTypeSpecifiers.RemoveAll(x => String.Equals(x.Name, p.Name, StringComparison.Ordinal));
+                        }
+                        parentInfo = parentInfo.DeclaringType?.GetTypeInfo();
+                    }
+                
+                    // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
+                    if (typeInfo.GenericTypeParameters.Length + typeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
+                    {
+                        sb.Append(typeInfo.DeclaringType.GetDisplayName())
+                          .Append(".");
+                    }
+                }
             }
-            else
+            
+            // Get the base name of the type.
+            int gravisIndex = type.Name.IndexOf('`'); // Indicates beginning of the generic type parameter portion of the name.
+            sb.Append(gravisIndex == -1 ? type.Name : type.Name.Substring(0, gravisIndex));
+
+            Debug.Assert((genericTypeSpecifiers.Count == 0) == (gravisIndex == -1), "(ownGenericTypeSpecifiers.Count == 0) == (gravisIndex == -1)");
+
+            if (genericTypeSpecifiers.Count != 0)
             {
-                return type.Name;
+                sb.Append('<');
+                sb.AppendJoin(", ", genericTypeSpecifiers.Select(t => t.GetDisplayName()));
+                sb.Append('>');
             }
+
+            return sb.ToString();
         }
 
         internal static IEnumerable<Type> GetInheritanceHierarchy(this Type type)
