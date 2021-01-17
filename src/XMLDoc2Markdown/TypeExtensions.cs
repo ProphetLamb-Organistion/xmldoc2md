@@ -37,11 +37,13 @@ namespace XMLDoc2Markdown
             { typeof(string), "string" },
         };
 
+        [Obsolete]
         internal static string GetSimplifiedName(this Type type)
         {
-            return simplifiedTypeNames.TryGetValue(type, out string simplifiedName) ? simplifiedName : type.GetDisplayName();
+            return simplifiedTypeNames.TryGetValue(type, out string simplifiedName) ? simplifiedName : type.Name;
         }
 
+        [Obsolete]
         internal static Visibility GetVisibility(this Type type)
         {
             if (type.IsPublic)
@@ -54,6 +56,7 @@ namespace XMLDoc2Markdown
             }
         }
 
+        [Obsolete]
         internal static string GetSignature(this Type type, bool full = false)
         {
             var signature = new List<string>();
@@ -115,6 +118,7 @@ namespace XMLDoc2Markdown
             return string.Join(' ', signature);
         }
 
+        [Obsolete]
         internal static string GetDisplayName(this Type type)
         {
             /*
@@ -131,37 +135,31 @@ namespace XMLDoc2Markdown
             genericTypeSpecifiers.AddRange(typeInfo.GenericTypeParameters);
             genericTypeSpecifiers.AddRange(typeInfo.GenericTypeArguments);
 
-            if (typeInfo.IsClass || typeInfo.IsValueType)
+            if ((typeInfo.IsClass || typeInfo.IsValueType) && typeInfo.IsNested)
             {
-                
-                if (typeInfo.IsNested)
+                // Remove generic type parameters already defined in declaring types.
+                TypeInfo? parentInfo = typeInfo.DeclaringType?.GetTypeInfo();
+                while (!(parentInfo is null) && parentInfo.IsGenericType)
                 {
-                    // Remove generic type parameters already defined in declaring types.
-                    TypeInfo? parentInfo = typeInfo.DeclaringType?.GetTypeInfo();
-                    while (!(parentInfo is null) && parentInfo.IsGenericType)
+                    foreach (Type p in parentInfo.GenericTypeParameters)
                     {
-                        foreach (Type p in parentInfo.GenericTypeParameters)
-                        {
-                            genericTypeSpecifiers.RemoveAll(x => String.Equals(x.Name, p.Name, StringComparison.Ordinal));
-                        }
-                        parentInfo = parentInfo.DeclaringType?.GetTypeInfo();
+                        genericTypeSpecifiers.RemoveAll(x => String.Equals(x.Name, p.Name, StringComparison.Ordinal));
                     }
-                
-                    // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
-                    if (typeInfo.GenericTypeParameters.Length + typeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
-                    {
-                        sb.Append(typeInfo.DeclaringType.GetDisplayName())
-                          .Append(".");
-                    }
+                    parentInfo = parentInfo.DeclaringType?.GetTypeInfo();
+                }
+            
+                // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
+                if (typeInfo.GenericTypeParameters.Length + typeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
+                {
+                    sb.Append(typeInfo.DeclaringType.GetDisplayName())
+                      .Append(".");
                 }
             }
             
             // Get the base name of the type.
             int gravisIndex = type.Name.IndexOf('`'); // Indicates beginning of the generic type parameter portion of the name.
             sb.Append(gravisIndex == -1 ? type.Name : type.Name.Substring(0, gravisIndex));
-
-            Debug.Assert((genericTypeSpecifiers.Count == 0) == (gravisIndex == -1), "(ownGenericTypeSpecifiers.Count == 0) == (gravisIndex == -1)");
-
+            
             if (genericTypeSpecifiers.Count != 0)
             {
                 sb.Append('<');
@@ -172,6 +170,7 @@ namespace XMLDoc2Markdown
             return sb.ToString();
         }
 
+        [Obsolete]
         internal static IEnumerable<Type> GetInheritanceHierarchy(this Type type)
         {
             for (Type current = type; current != null; current = current.BaseType)
@@ -180,6 +179,7 @@ namespace XMLDoc2Markdown
             }
         }
 
+        [Obsolete]
         internal static string GetMSDocsUrl(this Type type, string msdocsBaseUrl = "https://docs.microsoft.com/en-us/")
         {
             if (type == null)
@@ -202,6 +202,7 @@ namespace XMLDoc2Markdown
             };
         }
 
+        [Obsolete]
         internal static string GetInternalDocsUrl(this Type type, string rootUrl = "..")
         {
             if (type == null)
@@ -212,6 +213,7 @@ namespace XMLDoc2Markdown
             return $"{rootUrl}/{type.Namespace}/{type.Name.Replace('`', '-')}.md";
         }
 
+        [Obsolete]
         internal static MarkdownLink GetDocsLink(this Type type)
         {
             string url = type.Assembly == typeof(string).Assembly
@@ -219,6 +221,16 @@ namespace XMLDoc2Markdown
                             : type.GetInternalDocsUrl();
 
             return new MarkdownLink(type.GetDisplayName().FormatChevrons(), url);
+        }
+
+        public static TypeSymbol GetTypeSymbol(this Type type)
+        {
+            return TypeSymbolProvider.Instance[type.GetTypeSymbolIdentifier()];
+        }
+
+        public static string GetTypeSymbolIdentifier(this Type type)
+        {
+            return String.Concat(type.Namespace, ".", type.Name.Replace('`', '-'));
         }
     }
 }
