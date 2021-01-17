@@ -14,6 +14,9 @@ namespace XMLDoc2Markdown
 #region Fields
 
         private TypeInfo? _symbolTypeInfo;
+        private string? _simplifiedName;
+        private string? _displayName;
+        private string? _signaturePostfix;
 
         internal static readonly IReadOnlyDictionary<Type, string> SimplifiedTypeNames = new Dictionary<Type, string>
         {
@@ -46,11 +49,11 @@ namespace XMLDoc2Markdown
 
 #region Constructor
 
-        public TypeSymbol(Type? type, string filePath, string fileNameWithoutExtention)
+        public TypeSymbol(Type? type, string filePath, string fileNameWithoutExtension)
         {
             this.SymbolType = type;
             this.FilePath = filePath;
-            this.FileNameWithoutExtention = fileNameWithoutExtention;
+            this.FileNameWithoutExtension = fileNameWithoutExtension;
         }
 
 #endregion
@@ -69,7 +72,8 @@ namespace XMLDoc2Markdown
                 {
                     throw new InvalidOperationException("SymbolType is null.");
                 }
-                return SimplifiedTypeNames.TryGetValue(this.SymbolType, out string simplifiedName) ? simplifiedName : this.SymbolType.Name;
+
+                return this._simplifiedName ??= SimplifiedTypeNames.TryGetValue(this.SymbolType, out string simplifiedName) ? simplifiedName : this.SymbolType.Name;
             }
         }
 
@@ -87,9 +91,9 @@ namespace XMLDoc2Markdown
 
         public string FilePath { get; }
 
-        public string FileNameWithoutExtention { get; }
+        public string FileNameWithoutExtension { get; }
 
-        public string FullFilePathAndName => Path.Combine(this.FilePath, this.FileNameWithoutExtention + ".md");
+        public string FullFilePathAndName => Path.Combine(this.FilePath, this.FileNameWithoutExtension + ".md");
 
 #endregion
 
@@ -140,7 +144,11 @@ namespace XMLDoc2Markdown
 
             signature.Add(this.GetDisplayName());
 
-            if (this.SymbolType.IsClass || this.SymbolType.IsInterface)
+            if (!(this._signaturePostfix is null))
+            {
+                signature.Add(this._signaturePostfix);
+            }
+            else if (this.SymbolType.IsClass || this.SymbolType.IsInterface)
             {
                 var baseTypeAndInterfaces = new List<Type>();
 
@@ -153,7 +161,8 @@ namespace XMLDoc2Markdown
 
                 if (baseTypeAndInterfaces.Count > 0)
                 {
-                    signature.Add($": {string.Join(", ", baseTypeAndInterfaces.Select(t => t.Namespace != this.SymbolType.Namespace ? t.Namespace + "." : String.Empty + this.GetDisplayName()))}");
+                    this._signaturePostfix = $": {string.Join(", ", baseTypeAndInterfaces.Select(t => t.Namespace != this.SymbolType.Namespace ? t.Namespace + "." : String.Empty + this.GetDisplayName()))}";
+                    signature.Add(this._signaturePostfix);
                 }
             }
 
@@ -166,6 +175,12 @@ namespace XMLDoc2Markdown
             {
                 throw new InvalidOperationException("SymbolType is null.");
             }
+
+            if (!(this._displayName is null))
+            {
+                return this._displayName;
+            }
+
             /*
              * Convert generic type parameters from gravis notation to type notation.
              *
@@ -211,7 +226,8 @@ namespace XMLDoc2Markdown
                 sb.Append('>');
             }
 
-            return sb.ToString();
+            this._displayName = sb.ToString();
+            return this._displayName;
         }
 
         public IEnumerable<Type> GetInheritanceHierarchy()

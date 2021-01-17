@@ -1,5 +1,6 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -159,7 +160,7 @@ namespace XMLDoc2Markdown
             foreach (Type type in typeNamespaceGrouping
                                  .OrderBy(t => t.Name))
             {
-                string beautifyName = type.GetDisplayName();
+                string beautifyName = type.GetTypeSymbol().GetDisplayName();
                 string fileName = $"{StringExtensions.MakeTypeNameFileNameSafe(beautifyName)}.md";
                 list.AddItem(new MarkdownLink(new MarkdownInlineCode(beautifyName), typeNamespaceGrouping.Key + "/" + fileName));
 
@@ -176,6 +177,8 @@ namespace XMLDoc2Markdown
             }
             
             IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader(assembly.GetName().Name, 1);
+
+
 
             foreach (IGrouping<string, Type> typeNamespaceGrouping in LoadAssemblyTypes(assembly)
                                                                      .Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null) // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
