@@ -1,5 +1,11 @@
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
+using System.Text.RegularExpressions;
+
+using GlobExpressions;
 
 namespace XMLDoc2Markdown
 {
@@ -15,6 +21,57 @@ namespace XMLDoc2Markdown
         internal static string MakeTypeNameFileNameSafe(string typeName)
         {
             return typeName.ReplaceMany(typeNameToFileName_oldValues, typeNameToFileName_newValues, typeName.Length);
+        }
+
+        /// <summary>
+        /// Returns whether the string is a valid RegEx pattern.
+        /// </summary>
+        /// <param name="pattern">The string representing the RegEx pattern.</param>
+        /// <returns><see cref="true"/> if the string is a valid RegEx pattern; otherwise <see cref="false"/>.</returns>
+        internal static bool IsValidRegex(this string pattern)
+        {
+            if (string.IsNullOrWhiteSpace(pattern))
+            {
+                return false;
+            }
+
+            try
+            {
+                Regex.Match("", pattern);
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// Returns all files that fulfill the glob pattern.
+        /// </summary>
+        /// <param name="globFilePath">The glob file pattern.</param>
+        /// <returns>A enumerable sequence of all files that fulfill the glob pattern.</returns>
+        internal static IEnumerable<string> GetGlobFiles(this string globFilePath)
+        {
+            if (!Path.IsPathRooted(globFilePath))
+            {
+                return Glob.Files(Environment.CurrentDirectory, globFilePath);
+            }
+
+            // Rooted path, begins with C: etc.
+            if (globFilePath.IndexOfAny(new[] {'*', '?', '['}) == -1)
+            {
+                var fi = new FileInfo(globFilePath);
+                return fi.Exists ? new[] {fi.FullName} : Enumerable.Empty<string>();
+            }
+            // Split the glob as close to wildcard as possible
+            string[] pathPortions = globFilePath.Split(new[] {'\\', '/'}, StringSplitOptions.RemoveEmptyEntries);
+            int portionBreakIndex = pathPortions.TakeWhile(portion => portion.IndexOfAny(new[] {'*', '?', '['}) == -1).Count();
+
+            string directory = string.Join('\\', pathPortions, 0, portionBreakIndex - 1);
+            string glob = portionBreakIndex == pathPortions.Length ? string.Empty : string.Join('\\', pathPortions, portionBreakIndex, pathPortions.Length - portionBreakIndex);
+            return Glob.Files(directory, glob).Select(relativePath => Path.Combine(directory, relativePath));
         }
 
         /*

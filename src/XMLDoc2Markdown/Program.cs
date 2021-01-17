@@ -1,9 +1,15 @@
-﻿using System;
+using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
+using System.Text.RegularExpressions;
+
+using GlobExpressions;
+
 using Markdown;
 using Microsoft.Extensions.CommandLineUtils;
 
@@ -25,6 +31,8 @@ namespace XMLDoc2Markdown
             if (solutionRoot is null)
                 throw new Exception();
             args = new[] { Path.Combine(solutionRoot, @"publish\MyClassLib.dll"), Path.Combine(solutionRoot, @"docs\sample") };
+            args[0] = @"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
+            args[1] = Path.Combine(solutionRoot, @"docs\Groundbeef");
 #endif
             var app = new CommandLineApplication
             {
@@ -62,45 +70,21 @@ namespace XMLDoc2Markdown
                 string namespaceMatch = namespaceMatchOption.Value();
                 string indexPageName = indexPageNameOption.HasValue() ? indexPageNameOption.Value() : "index";
 
-                if (!Directory.Exists(@out))
+                foreach (string sourceFile in src.GetGlobFiles())
                 {
-                    Directory.CreateDirectory(@out);
-                }
-
-                var assembly = Assembly.LoadFrom(src);
-                var documentation = new XmlDocumentation(src);
-
-                IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader(assembly.GetName().Name, 1);
-
-                foreach (IGrouping<string, Type> groupedType in assembly
-                   .GetTypes()
-                   .Where(type => type.GetCustomAttribute<CompilerGeneratedAttribute>() is null) // Filter compiler generated classes, such as "<>c_DisplayClass"s and things spawned by Source Generators
-                   .GroupBy(type => type.Namespace).Where(g => !(g.Key is null))
-                   .OrderBy(g => g.Key))
-                {
-                    string subDir = Path.Combine(@out, groupedType.Key);
-                    if (!Directory.Exists(subDir))
+#if DEBUG
+                    ProcessAssembly(sourceFile, @out, namespaceMatch, indexPageName);
+#else
+                    try
                     {
-                        Directory.CreateDirectory(subDir);
+                        ProcessAssembly(sourceFile, @out, namespaceMatch, indexPageName);
                     }
-
-                    indexPage.AppendHeader(new MarkdownInlineCode(groupedType.Key), 2);
-
-                    var list = new MarkdownList();
-                    foreach (Type type in groupedType.OrderBy(x => x.Name))
+                    catch (Exception ex)
                     {
-                        string beautifyName = type.GetDisplayName();
-                        string fileName = $"{StringExtensions.MakeTypeNameFileNameSafe(beautifyName)}.md";
-                        list.AddItem(new MarkdownLink(new MarkdownInlineCode(beautifyName), groupedType.Key + "/" + fileName));
-
-                        File.WriteAllText(Path.Combine(@out, groupedType.Key, fileName), new TypeDocumentation(assembly, type, documentation).ToString());
+                        Console.WriteLine("Unable to process the assembly at {0}.\r\n An error occured in {1}\r\nMessage: {2}\r\n{3}\r\n{4}", src, ex.Source, ex.Message, ex.TargetSite, ex.StackTrace);
                     }
-
-                    indexPage.Append(list);
+#endif
                 }
-
-                File.WriteAllText(Path.Combine(@out, $"{indexPageName}.md"), indexPage.ToString());
-
                 return 0;
             });
 
@@ -115,9 +99,98 @@ namespace XMLDoc2Markdown
 #if !DEBUG
             catch (Exception ex)
             {
-                Console.WriteLine("Unable to execute application. Message: {0}\r\nSource: {1}\r\nTarget site: {2}\r\nStack trace:{3}", ex.Message, ex.Source, ex.TargetSite, ex.StackTrace);
+                Console.WriteLine("Unable to execute application.\r\n An error occured in {0}\r\nMessage: {1}\r\n{2}\r\n{3}", ex.Source, ex.Message, ex.TargetSite, ex.StackTrace);
             }
 #endif
+        }
+
+        private static Type[] LoadAssemblyTypes(Assembly assembly)
+        {
+            Type[]? assemblyTypes = null;
+            try
+            {
+                assemblyTypes = assembly.GetTypes();
+            }
+            catch (ReflectionTypeLoadException ex)
+            {
+                StringBuilder sb = new StringBuilder(1000);
+                sb.AppendLine("ReflectionTypeLoadException: Occurs when dynamically linked assemblies cannot be loaded, they have to be imported manually. For more info see: https://natemcmaster.com/blog/2017/12/21/netcore-primitives/#depsjson and https://docs.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing");
+                if (!(ex.LoaderExceptions is null))
+                {
+                    sb.AppendLine($"\r\n\r\n LoaderExceptions: FileNotFoundExceptions: {ex.LoaderExceptions.Count(x => x is FileNotFoundException)} -----");
+                    foreach (FileNotFoundException subEx in ex.LoaderExceptions.Where(x => x is FileNotFoundException).Cast<FileNotFoundException>())
+                    {
+                        string log = subEx.FusionLog ?? subEx.Message;
+                        if (!String.IsNullOrWhiteSpace(log))
+                            Console.WriteLine(log);
+                    }
+                    sb.AppendLine($"\r\n\r\n LoaderExceptions: other Exceptions: {ex.LoaderExceptions.Count(x => !(x is FileNotFoundException))} -----");
+                    foreach (Exception subEx in ex.LoaderExceptions.Where(x => !(x is FileNotFoundException)))
+                    {
+                        sb.AppendLine(subEx.Message);
+                    }
+                }
+                Console.WriteLine(sb);
+                throw;
+            }
+
+            return assemblyTypes;
+        }
+
+        private static MarkdownList ProcessAssemblyNamespace(IGrouping<string, Type> typeNamespaceGrouping, string outputPath, XmlDocumentation documentation, Assembly assembly)
+        {
+            var list = new MarkdownList();
+            foreach (Type type in typeNamespaceGrouping.OrderBy(x => x.Name))
+            {
+                string beautifyName = type.GetDisplayName();
+                string fileName = $"{StringExtensions.MakeTypeNameFileNameSafe(beautifyName)}.md";
+                list.AddItem(new MarkdownLink(new MarkdownInlineCode(beautifyName), typeNamespaceGrouping.Key + "/" + fileName));
+
+                File.WriteAllText(Path.Combine(outputPath, typeNamespaceGrouping.Key, fileName), new TypeDocumentation(assembly, type, documentation).ToString());
+            }
+            return list;
+        }
+
+        private static void ProcessAssembly(string sourcePath, string outputPath, string namespaceMatch, string indexPageName)
+        {
+            // Sub-directory of outputPath named by the assembly, fallback to the name of the binaries.
+            var assembly = Assembly.LoadFrom(sourcePath);
+            outputPath = Path.Combine(outputPath, assembly.GetName().Name ?? Path.GetFileNameWithoutExtension(sourcePath));
+            if (!Directory.Exists(outputPath))
+            {
+                Directory.CreateDirectory(outputPath);
+            }
+
+            if (string.IsNullOrWhiteSpace(namespaceMatch))
+            {
+                namespaceMatch = null;
+            }
+            else if (!namespaceMatch.IsValidRegex())
+            {
+                throw new ArgumentException("The RegEx pattern namespace-match is invalid.");
+            }
+
+            var documentation = new XmlDocumentation(sourcePath);
+
+            IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader(assembly.GetName().Name, 1);
+
+            foreach (IGrouping<string, Type> typeNamespaceGrouping in LoadAssemblyTypes(assembly)
+                                                                     .GroupBy(type => type.Namespace)
+                                                                     .Where(g =>  !(g.Key is null) && (namespaceMatch is null || Regex.IsMatch(g.Key, namespaceMatch)))
+                                                                     .OrderBy(g => g.Key))
+            {
+                string subDir = Path.Combine(outputPath, typeNamespaceGrouping.Key);
+                if (!Directory.Exists(subDir))
+                {
+                    Directory.CreateDirectory(subDir);
+                }
+
+                indexPage.AppendHeader(new MarkdownInlineCode(typeNamespaceGrouping.Key), 2);
+                indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping, outputPath, documentation, assembly));
+            }
+
+            File.WriteAllText(Path.Combine(outputPath, $"{indexPageName}.md"), indexPage.ToString());
+
         }
     }
 }
