@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -34,25 +34,26 @@ namespace XMLDoc2Markdown
             }
         }
 
-        public XElement GetMember(MemberInfo memberInfo)
+        public XElement? GetMember(MemberInfo memberInfo)
         {
             string fullName;
             if (memberInfo is Type type)
             {
-                fullName = type.FullName;
+                fullName = type.FullName ?? (type.Namespace + "." + type.Name);
             }
             else
             {
+                Type declaringType = memberInfo.DeclaringType ?? throw new InvalidOperationException("DeclaringType is null.");
                 string name = memberInfo is ConstructorInfo ? "#ctor" : memberInfo.Name;
-                fullName = $"{memberInfo.DeclaringType.Namespace}.{memberInfo.DeclaringType.Name}.{name}";
+                fullName = $"{declaringType.Namespace}.{declaringType.Name}.{name}";
             }
             if (memberInfo is MethodBase methodBase)
             {
                 Type[] genericArguments = methodBase switch {
-                    ConstructorInfo _ => methodBase.DeclaringType.GetGenericArguments(),
+                    ConstructorInfo _ => methodBase.DeclaringType?.GetGenericArguments(),
                     MethodInfo _ => methodBase.GetGenericArguments(),
-                    _ => new Type[0]
-                };
+                    _ => null
+                } ?? Array.Empty<Type>();
 
                 if (methodBase is MethodInfo && methodBase.IsGenericMethod)
                 {
@@ -74,9 +75,9 @@ namespace XMLDoc2Markdown
             return this.GetMember($"{memberInfo.MemberType.GetAlias()}:{fullName}");
         }
 
-        public XElement GetMember(string name)
+        public XElement? GetMember(string name)
         {
-            return this.Members.FirstOrDefault(member => member.Attribute("name").Value == name);
+            return this.Members.FirstOrDefault(member => member.Attribute("name")?.Value == name);
         }
     }
 }

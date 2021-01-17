@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Reflection;
 
 namespace XMLDoc2Markdown
@@ -9,11 +9,11 @@ namespace XMLDoc2Markdown
         {
             return memberInfo switch
             {
-                Type type => type.GetSignature(full),
+                Type type => type.ToSymbol().GetSignature(full),
                 MethodBase methodBase => methodBase.GetSignature(full),
                 PropertyInfo propertyInfo => propertyInfo.GetSignature(full),
                 EventInfo eventInfo => eventInfo.GetSignature(full),
-                _ => throw new NotImplementedException()
+                _ => throw new NotSupportedException()
             };
         }
     }

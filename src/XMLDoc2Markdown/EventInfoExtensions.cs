@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
@@ -43,7 +43,7 @@ namespace XMLDoc2Markdown
 
                 if (eventInfo.EventHandlerType != null)
                 {
-                    signature.Add(eventInfo.EventHandlerType.GetSimplifiedName());
+                    signature.Add(eventInfo.EventHandlerType.ToSymbol().SimplifiedName);
                 }
             }
 

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -9,81 +9,80 @@ using Markdown;
 
 namespace XMLDoc2Markdown
 {
-    public class TypeDocumentation
+    internal class TypeDocumentation
     {
         private readonly Assembly assembly;
-        private readonly Type type;
+        private readonly TypeSymbol symbol;
         private readonly XmlDocumentation documentation;
         private readonly IMarkdownDocument document = new MarkdownDocument();
 
-        public TypeDocumentation(Assembly assembly, Type type, XmlDocumentation documentation)
+        public TypeDocumentation(Assembly assembly, TypeSymbol symbol, XmlDocumentation documentation)
         {
             this.assembly = assembly;
-            this.type = type;
+            this.symbol = symbol;
             this.documentation = documentation;
         }
 
         public override string ToString()
         {
-            this.document.AppendHeader(this.type.GetDisplayName().FormatChevrons(), 1);
+            Type type = this.symbol.SymbolType;
+            this.document.AppendHeader(this.symbol.DisplayName.FormatChevrons(), 1);
 
-            this.document.AppendParagraph($"Namespace: {this.type.Namespace}");
+            this.document.AppendParagraph($"Namespace: {type.Namespace}");
 
-            XElement typeDocElement = this.documentation.GetMember(this.type);
-
+            XElement? typeDocElement = this.documentation.GetMember(type);
+            
             this.WriteMemberInfoSummary(typeDocElement);
-            this.WriteMemberInfoSignature(this.type);
-            this.WriteTypeParameters(this.type, typeDocElement);
+            this.WriteMemberInfoSignature(type);
+            this.WriteTypeParameters(type, typeDocElement);
 
-            if (this.type.BaseType != null)
+            if (type.BaseType != null)
             {
-                this.document.AppendParagraph($"Inheritance {string.Join(" → ", this.type.GetInheritanceHierarchy().Reverse().Select(t => t.GetDocsLink()))}");
+                this.document.AppendParagraph($"Inheritance {string.Join(" → ", this.symbol.GetInheritanceHierarchy().Reverse().Select(t => t.GetDocsLink()))}");
             }
 
-            Type[] interfaces = this.type.GetInterfaces();
+            Type[] interfaces = type.GetInterfaces();
             if (interfaces.Length > 0)
             {
-                this.document.AppendParagraph($"Implements {string.Join(", ", interfaces.Select(i => i.GetDocsLink()))}");
+                this.document.AppendParagraph($"Implements {string.Join(", ", interfaces.Select(i => i.ToSymbol().GetDocsLink()))}");
             }
 
-            this.WriteMembersDocumentation(this.type.GetProperties());
-            this.WriteMembersDocumentation(this.type.GetConstructors());
+            this.WriteMembersDocumentation(type.GetProperties());
+            this.WriteMembersDocumentation(type.GetConstructors());
             this.WriteMembersDocumentation(
-                this.type
+                type
                     .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
                     .Where(m => !m.IsSpecialName)
                     .Where(m => !m.IsPrivate)
                 );
-            this.WriteMembersDocumentation(this.type.GetEvents());
+            this.WriteMembersDocumentation(type.GetEvents());
 
-            if (this.type.IsEnum)
+            if (type.IsEnum)
             {
-                this.WriteEnumFields(this.type.GetFields().Where(m => !m.IsSpecialName));
+                this.WriteEnumFields(type.GetFields().Where(m => !m.IsSpecialName));
             }
 
             return this.document.ToString();
         }
 
-        private void WriteMemberInfoSummary(XElement memberDocElement)
+        private void WriteMemberInfoSummary(XElement? memberDocElement)
         {
             string summary = string.Empty;
-            IEnumerable<XNode> nodes = memberDocElement?.Element("summary")?.Nodes();
+            IEnumerable<XNode>? nodes = memberDocElement?.Element("summary")?.Nodes();
             if (nodes != null)
             {
-                foreach (XNode node in nodes)
-                {
-                    summary += node switch
+                summary = nodes.Aggregate(summary, (current, node) => current + node 
+                    switch 
                     {
                         XText text => text,
                         XElement element => this.PrintSummaryXElement(element),
                         _ => null
-                    };
-                }
+                    });
             }
             this.document.AppendParagraph(summary);
         }
 
-        private string PrintSummaryXElement(XElement element)
+        private string? PrintSummaryXElement(XElement element)
         {
             return element.Name.ToString() switch
             {
@@ -127,83 +126,90 @@ namespace XMLDoc2Markdown
             {
                 this.document.AppendHeader(member.GetSignature().FormatChevrons(), 3);
 
-                XElement memberDocElement = this.documentation.GetMember(member);
+                XElement? memberDocElement = this.documentation.GetMember(member);
 
                 this.WriteMemberInfoSummary(memberDocElement);
                 this.WriteMemberInfoSignature(member);
 
-                if (member is MethodBase methodBase)
+                switch (member)
                 {
-                    this.WriteTypeParameters(methodBase, memberDocElement);
-                    this.WriteMethodParams(methodBase, memberDocElement);
-
-                    if (methodBase is MethodInfo methodInfo && methodInfo.ReturnType != typeof(void))
+                    case MethodBase methodBase:
                     {
-                        this.WriteMethodReturnType(methodInfo, memberDocElement);
+                        this.WriteTypeParameters(methodBase, memberDocElement);
+                        this.WriteMethodParams(methodBase, memberDocElement);
+
+                        if (methodBase is MethodInfo methodInfo && methodInfo.ReturnType != typeof(void))
+                        {
+                            this.WriteMethodReturnType(methodInfo, memberDocElement);
+                        }
+
+                        break;
                     }
-                }
+                    case PropertyInfo propertyInfo:
+                    {
+                        this.document.AppendHeader("Property Value", 4);
 
-                if (member is PropertyInfo propertyInfo)
-                {
-                    this.document.AppendHeader("Property Value", 4);
-
-                    string valueDoc = memberDocElement?.Element("value")?.Value;
-                    this.document.AppendParagraph(
-                        $"{propertyInfo.GetReturnType()?.GetDisplayName()}<br>{valueDoc}");
+                        string? valueDoc = memberDocElement?.Element("value")?.Value;
+                        this.document.AppendParagraph(
+                            $"{propertyInfo.GetReturnType()?.ToSymbol().DisplayName}<br>{valueDoc}");
+                        break;
+                    }
                 }
 
                 this.WriteExceptions(memberDocElement);
             }
         }
 
-        private void WriteExceptions(XElement memberDocElement)
+        private void WriteExceptions(XElement? memberDocElement)
         {
-            IEnumerable<XElement> exceptionDocs = memberDocElement?.Elements("exception");
+            IEnumerable<XElement>? exceptionDocs = memberDocElement?.Elements("exception");
 
-            if (exceptionDocs?.Count() > 0)
+            if (exceptionDocs is null || exceptionDocs.Count() <= 0)
             {
-                this.document.AppendHeader("Exceptions", 4);
+                return;
+            }
 
-                foreach (XElement exceptionDoc in exceptionDocs)
+            this.document.AppendHeader("Exceptions", 4);
+
+            foreach (XElement exceptionDoc in exceptionDocs)
+            {
+                var text = new List<string>(2);
+
+                string? cref = exceptionDoc.Attribute("cref")?.Value;
+                if (cref != null && cref.Length > 2)
                 {
-                    var text = new List<string>(2);
-
-                    string cref = exceptionDoc.Attribute("cref")?.Value;
-                    if (cref != null && cref.Length > 2)
+                    int index = cref.LastIndexOf('.');
+                    string exception = cref.Substring(index + 1);
+                    if (!string.IsNullOrEmpty(exception))
                     {
-                        int index = cref.LastIndexOf('.');
-                        string exception = cref.Substring(index + 1);
-                        if (!string.IsNullOrEmpty(exception))
-                        {
-                            text.Add(exception);
-                        }
+                        text.Add(exception);
                     }
+                }
 
-                    if (!string.IsNullOrEmpty(exceptionDoc.Value))
-                    {
-                        text.Add(exceptionDoc.Value);
-                    }
+                if (!string.IsNullOrEmpty(exceptionDoc.Value))
+                {
+                    text.Add(exceptionDoc.Value);
+                }
 
-                    if (text.Count() > 0)
-                    {
-                        this.document.AppendParagraph(string.Join("<br>", text));
-                    }
+                if (text.Count() > 0)
+                {
+                    this.document.AppendParagraph(string.Join("<br>", text));
                 }
             }
         }
 
-        private void WriteMethodReturnType(MethodInfo methodInfo, XElement memberDocElement)
+        private void WriteMethodReturnType(MethodInfo methodInfo, XElement? memberDocElement)
         {
             Guard.Argument(methodInfo, nameof(methodInfo)).NotNull();
 
             this.document.AppendHeader("Returns", 4);
 
-            string returnsDoc = memberDocElement?.Element("returns")?.Value;
+            string? returnsDoc = memberDocElement?.Element("returns")?.Value;
             this.document.AppendParagraph(
-                $"{methodInfo.ReturnType.GetDisplayName()}<br>{returnsDoc}");
+                $"{methodInfo.ReturnType.ToSymbol().DisplayName}<br>{returnsDoc}");
         }
 
-        private void WriteTypeParameters(MemberInfo memberInfo, XElement memberDocElement)
+        private void WriteTypeParameters(MemberInfo memberInfo, XElement? memberDocElement)
         {
             Guard.Argument(memberInfo, nameof(memberInfo)).NotNull();
 
@@ -211,23 +217,25 @@ namespace XMLDoc2Markdown
             {
                 TypeInfo typeInfo => typeInfo.GenericTypeParameters,
                 MethodInfo methodInfo => methodInfo.GetGenericArguments(),
-                _ => new Type[0]
+                _ => Array.Empty<Type>()
             };
 
-            if (typeParams.Length > 0)
+            if (typeParams.Length <= 0)
             {
-                this.document.AppendHeader("Type Parameters", 4);
+                return;
+            }
 
-                foreach (Type typeParam in typeParams)
-                {
-                    string typeParamDoc = memberDocElement?.Elements("typeparam").FirstOrDefault(e => e.Attribute("name")?.Value == typeParam.Name)?.Value;
-                    this.document.AppendParagraph(
-                        $"{new MarkdownInlineCode(typeParam.GetDisplayName())}<br>{typeParamDoc}");
-                }
+            this.document.AppendHeader("Type Parameters", 4);
+
+            foreach (Type typeParam in typeParams)
+            {
+                string? typeParamDoc = memberDocElement?.Elements("typeparam").FirstOrDefault(e => e.Attribute("name")?.Value == typeParam.Name)?.Value;
+                this.document.AppendParagraph(
+                    $"{new MarkdownInlineCode(typeParam.ToSymbol().DisplayName)}<br>{typeParamDoc}");
             }
         }
 
-        private void WriteMethodParams(MethodBase methodBase, XElement memberDocElement)
+        private void WriteMethodParams(MethodBase methodBase, XElement? memberDocElement)
         {
             Guard.Argument(methodBase, nameof(methodBase)).NotNull();
 
@@ -239,7 +247,7 @@ namespace XMLDoc2Markdown
 
                 foreach (ParameterInfo param in @params)
                 {
-                    string paramDoc = memberDocElement?.Elements("param").FirstOrDefault(e => e.Attribute("name")?.Value == param.Name)?.Value;
+                    string? paramDoc = memberDocElement?.Elements("param").FirstOrDefault(e => e.Attribute("name")?.Value == param.Name)?.Value;
                     this.document.AppendParagraph(
                         $"{new MarkdownInlineCode(param.Name)} {param.ParameterType.Name}<br>{paramDoc}");
                 }
@@ -264,10 +272,10 @@ namespace XMLDoc2Markdown
 
                 foreach (FieldInfo field in fields)
                 {
-                    string paramDoc = this.documentation.GetMember(field)?.Element("summary")?.Value;
-                    if (!(paramDoc is null))
+                    string? paramDoc = this.documentation.GetMember(field)?.Element("summary")?.Value;
+                    if (paramDoc != null)
                     {
-                        table.AddRow(new MarkdownTableRow(field.Name, ((Enum)Enum.Parse(this.type, field.Name)).ToString("D"), paramDoc.Trim()));
+                        table.AddRow(new MarkdownTableRow(field.Name, ((Enum)Enum.Parse(this.symbol.SymbolType, field.Name)).ToString("D"), paramDoc.Trim()));
                     }
                 }
 
@@ -275,26 +283,30 @@ namespace XMLDoc2Markdown
             }
         }
 
-        private MarkdownInlineElement GetLinkFromReference(string crefAttribute)
+        private MarkdownInlineElement GetLinkFromReference(string? crefAttribute)
         {
-            if (crefAttribute[1] == ':' &&
-                MemberTypesAliases.TryGetMemberType(crefAttribute[0], out MemberTypes memberType))
+            if (crefAttribute is null || crefAttribute.Length < 2)
             {
-                string memberFullName = crefAttribute.Substring(2);
-
-                if (memberType == MemberTypes.TypeInfo)
-                {
-                    Type type = Type.GetType(memberFullName) ?? this.assembly.GetType(memberFullName);
-                    if (type != null)
-                    {
-                        return type.GetDocsLink();
-                    }
-                }
-
-                return new MarkdownInlineCode(memberFullName);
+                return new MarkdownInlineCode(String.Empty);
             }
 
-            return new MarkdownInlineCode(crefAttribute);
+            if (crefAttribute[1] != ':' || !MemberTypesAliases.TryGetMemberType(crefAttribute[0], out MemberTypes memberType))
+            {
+                return new MarkdownInlineCode(crefAttribute);
+            }
+
+            string memberFullName = crefAttribute.Substring(2);
+
+            if (memberType == MemberTypes.TypeInfo)
+            {
+                Type? type = Type.GetType(memberFullName) ?? this.assembly.GetType(memberFullName);
+                if (type != null)
+                {
+                    return type.ToSymbol().GetDocsLink();
+                }
+            }
+
+            return new MarkdownInlineCode(memberFullName);
         }
     }
 }

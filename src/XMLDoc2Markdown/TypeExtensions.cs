@@ -1,9 +1,10 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 
 using Markdown;
@@ -40,7 +41,7 @@ namespace XMLDoc2Markdown
         [Obsolete]
         internal static string GetSimplifiedName(this Type type)
         {
-            return simplifiedTypeNames.TryGetValue(type, out string simplifiedName) ? simplifiedName : type.Name;
+            return simplifiedTypeNames.TryGetValue(type, out string? simplifiedName) ? simplifiedName : type.Name;
         }
 
         [Obsolete]
@@ -151,7 +152,7 @@ namespace XMLDoc2Markdown
                 // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
                 if (typeInfo.GenericTypeParameters.Length + typeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
                 {
-                    sb.Append(typeInfo.DeclaringType.GetDisplayName())
+                    sb.Append(typeInfo.DeclaringType?.ToSymbol().DisplayName ?? "???")
                       .Append(".");
                 }
             }
@@ -173,7 +174,7 @@ namespace XMLDoc2Markdown
         [Obsolete]
         internal static IEnumerable<Type> GetInheritanceHierarchy(this Type type)
         {
-            for (Type current = type; current != null; current = current.BaseType)
+            for (Type? current = type; current != null; current = current.BaseType)
             {
                 yield return current;
             }
@@ -223,9 +224,9 @@ namespace XMLDoc2Markdown
             return new MarkdownLink(type.GetDisplayName().FormatChevrons(), url);
         }
 
-        public static TypeSymbol GetTypeSymbol(this Type type)
+        public static TypeSymbol ToSymbol(this Type type)
         {
-            return TypeSymbolProvider.Instance[type.GetTypeSymbolIdentifier()];
+            return TypeSymbolProvider.Instance.TryGetValue(type.GetTypeSymbolIdentifier(), out TypeSymbol? symbol) ? symbol : new TypeSymbol(type);
         }
 
         public static string GetTypeSymbolIdentifier(this Type type)

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -15,7 +15,7 @@ namespace XMLDoc2Markdown
             return getMethodeVisibility.CompareTo(setMethodeVisibility) >= 0 ? getMethodeVisibility : setMethodeVisibility;
         }
 
-        internal static Type GetReturnType(this PropertyInfo propertyInfo)
+        internal static Type? GetReturnType(this PropertyInfo propertyInfo)
         {
             return propertyInfo.GetMethod?.ReturnType ?? propertyInfo.SetMethod?.GetParameters()?.FirstOrDefault()?.ParameterType;
         }
@@ -40,7 +40,7 @@ namespace XMLDoc2Markdown
                     signature.Add("abstract");
                 }
 
-                signature.Add(propertyInfo.GetReturnType()?.GetSimplifiedName());
+                signature.Add(propertyInfo.GetReturnType()?.ToSymbol().SimplifiedName ?? "???");
             }
 
             signature.Add(propertyInfo.Name);

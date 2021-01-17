@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -86,13 +86,21 @@ namespace XMLDoc2Markdown
             int oldCount = oldValues.Length;
             int newCount = newValues.Length;
             if (oldCount != newCount)
+            {
                 throw new ArgumentException("Each old value must match exactly one new value");
+            }
+
             for (int i = 0; i < oldCount; i++)
             {
                 if (string.IsNullOrEmpty(oldValues[i]))
-                    throw new ArgumentException("Old value may not be null or empty.", "oldValues");
+                {
+                    throw new ArgumentException("Old value may not be null or empty.", nameof(oldValues));
+                }
+
                 if (newValues[i] == null)
-                    throw new ArgumentException("New value may be null.", "newValues");
+                {
+                    throw new ArgumentException("New value may be null.", nameof(newValues));
+                }
             }
             int strLen = str.Length;
             int buildSpace = resultStringLength == 0 ? strLen << 1 : resultStringLength;
@@ -141,9 +149,11 @@ namespace XMLDoc2Markdown
                                 if (!find)
                                 {
                                     if (*(pStr + 1) == *(_oldFix + 1))
+                                    {
                                         find = oldValLen == 2
-                                        // use native memcmp function.
-                                        || 0 == memcmp((byte*)(pStr + 2), (byte*)(_oldFix + 2), (oldValLen - 2) << 1);
+                                               // use native memcmp function.
+                                            || 0 == memcmp((byte*)(pStr + 2), (byte*)(_oldFix + 2), (oldValLen - 2) << 1);
+                                    }
                                 }
                                         
                                 if (find)
@@ -183,7 +193,9 @@ namespace XMLDoc2Markdown
                     }
                     // if not found, just increment the pointer within the main string
                     if (!find)
+                    {
                         pStr++;
+                    }
                 }
                 // if there is a part from the original string to copy, then do it.
                 if (copyStartPos != pStr)
@@ -218,11 +230,17 @@ namespace XMLDoc2Markdown
         internal static unsafe char[] ExpandArray(char[] array, int oldSize, int newSize)
         {
             if (oldSize > newSize || oldSize > array.Length)
+            {
                 throw new ArgumentOutOfRangeException();
+            }
+
             char[] bigger;
             bigger = new char[newSize];
             fixed (char* bpt = bigger, apt = array)
+            {
                 memcpy((byte*)bpt, (byte*)apt, oldSize<<1);
+            }
+
             return bigger;
         }
 

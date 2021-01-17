@@ -1,10 +1,12 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace XMLDoc2Markdown
 {
@@ -34,12 +36,12 @@ namespace XMLDoc2Markdown
 
         public void Add(IEnumerable<Type> types)
         {
-            IList<Type> typeList = types.Where(t => !(t?.Namespace is null)).ToList();
+            IList<Type> typeList = types.ToList();
             IDictionary<string, string> typeNamespaceToPathMap = new Dictionary<string, string>();
             // Namespace directory structure
-            foreach ((string[] key, char[] value) in this.NamespacesToDirectoryStructure(typeList.Select(t => t.Namespace?.Split("."))))
+            foreach ((string[] key, char[] value) in this.NamespacesToDirectoryStructure(typeList.Select(t => t.Namespace!.Split("."))))
             {
-                typeNamespaceToPathMap.Add(string.Join('.', key), new string(value));
+                typeNamespaceToPathMap.TryAdd(string.Join('.', key), new string(value));
             }
             // TypeSymbols
             foreach (KeyValuePair<string, TypeSymbol> keyValuePair in typeList
@@ -51,13 +53,13 @@ namespace XMLDoc2Markdown
 
         public void Add(string symbolIdentifer, string filePath, string fileNameWithoutExtension)
         {
-            this._symbolProvider.Add(symbolIdentifer, new TypeSymbol(null, filePath, fileNameWithoutExtension));
+            this._symbolProvider.Add(symbolIdentifer, new TypeSymbol(filePath, fileNameWithoutExtension));
         }
 
         public bool ContainsKey(string symbolIdentifier) => this._symbolProvider.ContainsKey(symbolIdentifier);
 
-        public bool TryGetValue(string symbolIdentifier, out TypeSymbol value) => this._symbolProvider.TryGetValue(symbolIdentifier, out value);
-
+        public bool TryGetValue(string symbolIdentifier, [MaybeNullWhen(false)] out TypeSymbol value) => this._symbolProvider.TryGetValue(symbolIdentifier, out value);
+        
         public IEnumerator<KeyValuePair<string, TypeSymbol>> GetEnumerator() => this._symbolProvider.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
@@ -72,7 +74,7 @@ namespace XMLDoc2Markdown
             IDictionary<string[], char[]> typeNamespaceToPathMap = new Dictionary<string[], char[]>();
             IList<string[]> processedTypeNamespaces = new List<string[]>();
             foreach (string[] segments in namespaces
-                                         .Distinct(new StringSequenceEqualityComparer())
+                                          .Distinct(new StringSequenceEqualityComparer())
                                          .OrderBy(n => n.Length))
             {
                 int segment = 0;
@@ -125,11 +127,11 @@ namespace XMLDoc2Markdown
 		    }
 	    }
 
-	    private class StringSequenceEqualityComparer : IEqualityComparer<string[]>
+	    private class StringSequenceEqualityComparer : IEqualityComparer<string[]?>
 	    {
-		    public bool Equals(string[] x, string[] y) => !(x is null) && x.Length == y?.Length && x.SequenceEqual(y, StringComparer.Ordinal);
+		    public bool Equals(string[]? x, string[]? y) => !(x is null) && x.Length == y?.Length && x.SequenceEqual(y, StringComparer.Ordinal);
 
-		    public int GetHashCode(string[] obj) => obj.GetHashCode();
+		    public int GetHashCode(string[]? obj) => obj?.GetHashCode() ?? 0;
 	    }
 
 #endregion

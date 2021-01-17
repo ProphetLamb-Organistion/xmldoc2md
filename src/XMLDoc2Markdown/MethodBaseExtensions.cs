@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
@@ -38,10 +38,11 @@ namespace XMLDoc2Markdown
         internal static string GetSignature(this MethodBase methodBase, bool full = false)
         {
             var signature = new List<string>();
+            Type declaringType = methodBase.DeclaringType ?? throw new InvalidOperationException("DeclaringType is null");;
 
             if (full)
             {
-                if (methodBase.DeclaringType.IsClass)
+                if (declaringType.IsClass)
                 {
                     signature.Add(methodBase.GetVisibility().Print());
 
@@ -58,15 +59,11 @@ namespace XMLDoc2Markdown
 
                 if (methodBase is MethodInfo methodInfo)
                 {
-                    signature.Add(methodInfo.ReturnType.GetSimplifiedName());
+                    signature.Add(methodInfo.ReturnType.ToSymbol().SimplifiedName);
                 }
             }
 
-            string displayName = methodBase.MemberType == MemberTypes.Constructor ? methodBase.DeclaringType?.Name : methodBase.Name;
-            if (displayName is null)
-            {
-                throw new InvalidOperationException("Constructor members must have DeclaringType defined. Name cannot be null");
-            }
+            string displayName = methodBase.MemberType == MemberTypes.Constructor ? declaringType.Name : methodBase.Name;
             int genericCharIndex = displayName.IndexOf('`');
             if (genericCharIndex > -1)
             {
@@ -77,12 +74,12 @@ namespace XMLDoc2Markdown
                 Type[] genericArguments = methodInfo1.GetGenericArguments();
                 if  (genericArguments.Length > 0)
                 {
-                    displayName += $"<{string.Join(", ", genericArguments.Select(a => a.GetDisplayName()))}>";
+                    displayName += $"<{string.Join(", ", genericArguments.Select(a => a.ToSymbol().DisplayName))}>";
                 }
             }
             ParameterInfo[] @params = methodBase.GetParameters();
             IEnumerable<string> paramsNames = @params
-                .Select(p => $"{(full ? p.ParameterType.GetSimplifiedName() : p.ParameterType.GetDisplayName())}{(full ? $" {p.Name}" : null)}");
+                .Select(p => $"{(full ? p.ParameterType.ToSymbol().SimplifiedName : p.ParameterType.ToSymbol().DisplayName)}{(full ? $" {p.Name}" : null)}");
             displayName += $"({string.Join(", ", paramsNames)})";
             signature.Add(displayName);
 

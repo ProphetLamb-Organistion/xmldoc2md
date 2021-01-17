@@ -1,15 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Text.RegularExpressions;
-
-using GlobExpressions;
 
 using Markdown;
 using Microsoft.Extensions.CommandLineUtils;
@@ -22,18 +18,20 @@ namespace XMLDoc2Markdown
         {
 #if DEBUG
             Debugger.Launch();
-            string solutionRoot = Environment.CurrentDirectory;
-            DirectoryInfo parent = null;
+            string? solutionRoot = Environment.CurrentDirectory;
+            DirectoryInfo? parent = null;
             while (!(solutionRoot is null) && !String.Equals(parent?.Name, "xmldoc2md", StringComparison.InvariantCultureIgnoreCase))
             {
                 parent = new DirectoryInfo(solutionRoot).Parent;
                 solutionRoot = parent?.FullName;
             }
             if (solutionRoot is null)
+            {
                 throw new Exception();
+            }
             args = new[] { Path.Combine(solutionRoot, @"publish\MyClassLib.dll"), Path.Combine(solutionRoot, @"docs\sample") };
-            //args[0] = @"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
-            //args[1] = Path.Combine(solutionRoot, @"docs\Groundbeef");
+            args[0] = @"C:\Users\Public\source\repos\GroupedObservableCollection\src\bin\Debug\netstandard2.0\GroupedObservableCollection.dll"; //@"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
+            args[1] = Path.Combine(solutionRoot, @"docs\GOC");
 #endif
             var app = new CommandLineApplication
             {
@@ -60,7 +58,7 @@ namespace XMLDoc2Markdown
             {
                 string src = srcArg.Value;
                 string @out = outArg.Value;
-                string namespaceMatch = namespaceMatchOption.Value();
+                string? namespaceMatch = namespaceMatchOption.Value();
                 string indexPageName = indexPageNameOption.HasValue() ? indexPageNameOption.Value() : "index";
 
                 if (string.IsNullOrWhiteSpace(namespaceMatch))
@@ -139,12 +137,17 @@ namespace XMLDoc2Markdown
                     {
                         string log = subEx.FusionLog ?? subEx.Message;
                         if (!String.IsNullOrWhiteSpace(log))
+                        {
                             Console.WriteLine(log);
+                        }
                     }
                     sb.AppendLine($"\r\n\r\n LoaderExceptions: other Exceptions: {ex.LoaderExceptions.Count(x => !(x is FileNotFoundException))} -----");
-                    foreach (Exception subEx in ex.LoaderExceptions.Where(x => !(x is FileNotFoundException)))
+                    foreach (Exception? subEx in ex.LoaderExceptions.Where(x => !(x is FileNotFoundException)))
                     {
-                        sb.AppendLine(subEx.Message);
+                        if (subEx != null)
+                        {
+                            sb.AppendLine(subEx.Message);
+                        }
                     }
                 }
                 Console.WriteLine(sb);
@@ -154,22 +157,22 @@ namespace XMLDoc2Markdown
             return assemblyTypes;
         }
 
-        private static MarkdownList ProcessAssemblyNamespace(IGrouping<string, Type> typeNamespaceGrouping, string outputPath, XmlDocumentation documentation, Assembly assembly)
+        private static MarkdownList ProcessAssemblyNamespace(IGrouping<string, TypeSymbol> typeNamespaceGrouping, string outputPath, XmlDocumentation documentation, Assembly assembly)
         {
             var list = new MarkdownList();
-            foreach (Type type in typeNamespaceGrouping
-                                 .OrderBy(t => t.Name))
+            foreach (TypeSymbol symbol in typeNamespaceGrouping
+                                 .OrderBy(t => t.SymbolType!.Name))
             {
-                string beautifyName = type.GetTypeSymbol().GetDisplayName();
+                string beautifyName = symbol.DisplayName;
                 string fileName = $"{StringExtensions.MakeTypeNameFileNameSafe(beautifyName)}.md";
                 list.AddItem(new MarkdownLink(new MarkdownInlineCode(beautifyName), typeNamespaceGrouping.Key + "/" + fileName));
 
-                File.WriteAllText(Path.Combine(outputPath, typeNamespaceGrouping.Key, fileName), new TypeDocumentation(assembly, type, documentation).ToString());
+                File.WriteAllText(symbol.FullFilePathAndName, new TypeDocumentation(assembly, symbol, documentation).ToString());
             }
             return list;
         }
 
-        private static void ProcessAssembly(Assembly assembly, XmlDocumentation documentation, string outputPath, string namespaceMatch, string indexPageName)
+        private static void ProcessAssembly(Assembly assembly, XmlDocumentation documentation, string outputPath, string? namespaceMatch, string indexPageName)
         {
             if (!Directory.Exists(outputPath))
             {
@@ -178,22 +181,25 @@ namespace XMLDoc2Markdown
             
             IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader(assembly.GetName().Name, 1);
 
+            TypeSymbolProvider.Instance.Add("index", String.Empty, indexPageName + ".md");
+            // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
+            TypeSymbolProvider.Instance.Add(LoadAssemblyTypes(assembly).Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null && t.Namespace != null));
 
-
-            foreach (IGrouping<string, Type> typeNamespaceGrouping in LoadAssemblyTypes(assembly)
-                                                                     .Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null) // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
-                                                                     .GroupBy(type => type.Namespace)
-                                                                     .Where(g =>  !(g.Key is null) && (namespaceMatch is null || Regex.IsMatch(g.Key, namespaceMatch)))
-                                                                     .OrderBy(g => g.Key))
+            foreach (IGrouping<string?, TypeSymbol> typeNamespaceGrouping in TypeSymbolProvider
+                                                                           .Instance
+                                                                           .Select(kvp => kvp.Value)
+                                                                           .GroupBy(type => type.SymbolType?.Namespace)
+                                                                           .Where(g =>  g.Key != null && (namespaceMatch is null || Regex.IsMatch(g.Key, namespaceMatch)))
+                                                                           .OrderBy(g => g.Key))
             {
-                string subDir = Path.Combine(outputPath, typeNamespaceGrouping.Key);
-                if (!Directory.Exists(subDir))
+                string documentationDir = typeNamespaceGrouping.First().FilePath;
+                if (!Directory.Exists(documentationDir))
                 {
-                    Directory.CreateDirectory(subDir);
+                    Directory.CreateDirectory(documentationDir);
                 }
 
                 indexPage.AppendHeader(new MarkdownInlineCode(typeNamespaceGrouping.Key), 2);
-                indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping, outputPath, documentation, assembly));
+                indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping!, outputPath, documentation, assembly));
             }
 
             File.WriteAllText(Path.Combine(outputPath, $"{indexPageName}.md"), indexPage.ToString());
