@@ -69,7 +69,7 @@ namespace XMLDoc2Markdown
             string[] pathPortions = globFilePath.Split(new[] {'\\', '/'}, StringSplitOptions.RemoveEmptyEntries);
             int portionBreakIndex = pathPortions.TakeWhile(portion => portion.IndexOfAny(new[] {'*', '?', '['}) == -1).Count();
 
-            string directory = string.Join('\\', pathPortions, 0, portionBreakIndex - 1);
+            string directory = string.Join('\\', pathPortions, 0, portionBreakIndex);
             string glob = portionBreakIndex == pathPortions.Length ? string.Empty : string.Join('\\', pathPortions, portionBreakIndex, pathPortions.Length - portionBreakIndex);
             return Glob.Files(directory, glob).Select(relativePath => Path.Combine(directory, relativePath));
         }

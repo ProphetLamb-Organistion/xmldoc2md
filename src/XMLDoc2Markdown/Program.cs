@@ -20,7 +20,7 @@ namespace XMLDoc2Markdown
         static void Main(string[] args)
         {
 #if DEBUG
-            System.Diagnostics.Debugger.Launch();
+            Debugger.Launch();
             string solutionRoot = Environment.CurrentDirectory;
             DirectoryInfo parent = null;
             while (!(solutionRoot is null) && !String.Equals(parent?.Name, "xmldoc2md", StringComparison.InvariantCultureIgnoreCase))
@@ -31,23 +31,15 @@ namespace XMLDoc2Markdown
             if (solutionRoot is null)
                 throw new Exception();
             args = new[] { Path.Combine(solutionRoot, @"publish\MyClassLib.dll"), Path.Combine(solutionRoot, @"docs\sample") };
-            args[0] = @"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
-            args[1] = Path.Combine(solutionRoot, @"docs\Groundbeef");
+            //args[0] = @"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
+            //args[1] = Path.Combine(solutionRoot, @"docs\Groundbeef");
 #endif
             var app = new CommandLineApplication
             {
                 Name = "xmldoc2md"
             };
 
-            app.VersionOption("-v|--version", () =>
-            {
-                return string.Format(
-                    "Version {0}",
-                    Assembly.GetEntryAssembly()
-                        .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
-                        .InformationalVersion
-                        .ToString());
-            });
+            app.VersionOption("-v|--version", () => $"Version {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
             app.HelpOption("-?|-h|--help");
 
             CommandArgument srcArg = app.Argument("src", "DLL source path");
@@ -70,20 +62,45 @@ namespace XMLDoc2Markdown
                 string namespaceMatch = namespaceMatchOption.Value();
                 string indexPageName = indexPageNameOption.HasValue() ? indexPageNameOption.Value() : "index";
 
-                foreach (string sourceFile in src.GetGlobFiles())
+                if (string.IsNullOrWhiteSpace(namespaceMatch))
                 {
-#if DEBUG
-                    ProcessAssembly(sourceFile, @out, namespaceMatch, indexPageName);
-#else
-                    try
+                    namespaceMatch = null;
+                }
+                else if (!namespaceMatch.IsValidRegex())
+                {
+                    throw new ArgumentException("The RegEx pattern namespace-match is invalid.");
+                }
+
+                string[] sourceFiles = src.GetGlobFiles().ToArray();
+                if (sourceFiles.Length > 1)
+                {
+                    string executableFileName = DetermineCurrentProcessFullFilePath();
+                    foreach (string sourceFile in sourceFiles)
                     {
-                        ProcessAssembly(sourceFile, @out, namespaceMatch, indexPageName);
+                        StringBuilder arguments = new StringBuilder();
+                        arguments.Append(sourceFile).Append(" ").Append(@out);
+                        if (!(namespaceMatch is null))
+                        {
+                            arguments.Append(" --namespace-match ").Append(namespaceMatch);
+                        }
+                        arguments.Append(" --index-page-name ").Append(indexPageName);
+                        Process.Start(executableFileName, arguments.ToString());
                     }
-                    catch (Exception ex)
-                    {
-                        Console.WriteLine("Unable to process the assembly at {0}.\r\n An error occured in {1}\r\nMessage: {2}\r\n{3}\r\n{4}", src, ex.Source, ex.Message, ex.TargetSite, ex.StackTrace);
-                    }
-#endif
+                    
+                }
+                if (sourceFiles.Length == 0)
+                {
+                    Console.WriteLine("No files found that match the glob pattern provided.");
+                    return 1;
+                }
+                try
+                {
+                    ProcessAssembly(Assembly.LoadFrom(sourceFiles[0]), new XmlDocumentation(sourceFiles[0]), @out, namespaceMatch, indexPageName);
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("Unable to process the assembly at {0}.\r\n An error occured in {1}\r\nMessage: {2}\r\n{3}\r\n{4}", sourceFiles[0], ex.Source, ex.Message, ex.TargetSite, ex.StackTrace);
+                    return -1;
                 }
                 return 0;
             });
@@ -96,17 +113,16 @@ namespace XMLDoc2Markdown
             {
                 Console.WriteLine(ex.Message);
             }
-#if !DEBUG
             catch (Exception ex)
             {
                 Console.WriteLine("Unable to execute application.\r\n An error occured in {0}\r\nMessage: {1}\r\n{2}\r\n{3}", ex.Source, ex.Message, ex.TargetSite, ex.StackTrace);
             }
-#endif
         }
 
         private static Type[] LoadAssemblyTypes(Assembly assembly)
         {
-            Type[]? assemblyTypes = null;
+            Type[] assemblyTypes;
+
             try
             {
                 assemblyTypes = assembly.GetTypes();
@@ -140,7 +156,8 @@ namespace XMLDoc2Markdown
         private static MarkdownList ProcessAssemblyNamespace(IGrouping<string, Type> typeNamespaceGrouping, string outputPath, XmlDocumentation documentation, Assembly assembly)
         {
             var list = new MarkdownList();
-            foreach (Type type in typeNamespaceGrouping.OrderBy(x => x.Name))
+            foreach (Type type in typeNamespaceGrouping
+                                 .OrderBy(t => t.Name))
             {
                 string beautifyName = type.GetDisplayName();
                 string fileName = $"{StringExtensions.MakeTypeNameFileNameSafe(beautifyName)}.md";
@@ -151,30 +168,17 @@ namespace XMLDoc2Markdown
             return list;
         }
 
-        private static void ProcessAssembly(string sourcePath, string outputPath, string namespaceMatch, string indexPageName)
+        private static void ProcessAssembly(Assembly assembly, XmlDocumentation documentation, string outputPath, string namespaceMatch, string indexPageName)
         {
-            // Sub-directory of outputPath named by the assembly, fallback to the name of the binaries.
-            var assembly = Assembly.LoadFrom(sourcePath);
-            outputPath = Path.Combine(outputPath, assembly.GetName().Name ?? Path.GetFileNameWithoutExtension(sourcePath));
             if (!Directory.Exists(outputPath))
             {
                 Directory.CreateDirectory(outputPath);
             }
-
-            if (string.IsNullOrWhiteSpace(namespaceMatch))
-            {
-                namespaceMatch = null;
-            }
-            else if (!namespaceMatch.IsValidRegex())
-            {
-                throw new ArgumentException("The RegEx pattern namespace-match is invalid.");
-            }
-
-            var documentation = new XmlDocumentation(sourcePath);
-
+            
             IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader(assembly.GetName().Name, 1);
 
             foreach (IGrouping<string, Type> typeNamespaceGrouping in LoadAssemblyTypes(assembly)
+                                                                     .Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null) // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
                                                                      .GroupBy(type => type.Namespace)
                                                                      .Where(g =>  !(g.Key is null) && (namespaceMatch is null || Regex.IsMatch(g.Key, namespaceMatch)))
                                                                      .OrderBy(g => g.Key))
@@ -190,7 +194,11 @@ namespace XMLDoc2Markdown
             }
 
             File.WriteAllText(Path.Combine(outputPath, $"{indexPageName}.md"), indexPage.ToString());
+        }
 
+        private static string DetermineCurrentProcessFullFilePath()
+        {
+            return Process.GetCurrentProcess().MainModule?.FileName ?? throw new InvalidOperationException("Cannot get the main module of the current process.");
         }
     }
 }
