@@ -163,11 +163,12 @@ namespace XMLDoc2Markdown
             foreach (TypeSymbol symbol in typeNamespaceGrouping
                                  .OrderBy(t => t.SymbolType!.Name))
             {
-                string beautifyName = symbol.DisplayName;
-                string fileName = $"{StringExtensions.MakeTypeNameFileNameSafe(beautifyName)}.md";
-                list.AddItem(new MarkdownLink(new MarkdownInlineCode(beautifyName), typeNamespaceGrouping.Key + "/" + fileName));
+                string fullFileName = Path.Combine(outputPath, symbol.FullFilePathAndName);
+                EnsureDirectory(Path.GetDirectoryName(fullFileName));
 
-                File.WriteAllText(symbol.FullFilePathAndName, new TypeDocumentation(assembly, symbol, documentation).ToString());
+                list.AddItem(new MarkdownLink(new MarkdownInlineCode(symbol.DisplayName), symbol.FullFilePathAndName));
+
+                File.WriteAllText(fullFileName, new TypeDocumentation(assembly, symbol, documentation).ToString());
             }
             return list;
         }
@@ -193,10 +194,7 @@ namespace XMLDoc2Markdown
                                                                            .OrderBy(g => g.Key))
             {
                 string documentationDir = typeNamespaceGrouping.First().FilePath;
-                if (!Directory.Exists(documentationDir))
-                {
-                    Directory.CreateDirectory(documentationDir);
-                }
+                EnsureDirectory(documentationDir);
 
                 indexPage.AppendHeader(new MarkdownInlineCode(typeNamespaceGrouping.Key), 2);
                 indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping!, outputPath, documentation, assembly));
@@ -208,6 +206,14 @@ namespace XMLDoc2Markdown
         private static string DetermineCurrentProcessFullFilePath()
         {
             return Process.GetCurrentProcess().MainModule?.FileName ?? throw new InvalidOperationException("Cannot get the main module of the current process.");
+        }
+
+        private static void EnsureDirectory(string? directoryName)
+        {
+            if (!Directory.Exists(directoryName))
+            {
+                Directory.CreateDirectory(directoryName);
+            }
         }
     }
 }

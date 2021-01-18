@@ -45,7 +45,7 @@ namespace XMLDoc2Markdown
             }
             // TypeSymbols
             foreach (KeyValuePair<string, TypeSymbol> keyValuePair in typeList
-               .Select(x => KeyValuePair.Create(x.GetTypeSymbolIdentifier(), new TypeSymbol(x, typeNamespaceToPathMap[x.Namespace!], x.Name.Replace('`', '-')))))
+               .Select(x => KeyValuePair.Create(x.GetTypeSymbolIdentifier(), new TypeSymbol(x, typeNamespaceToPathMap[x.Namespace!], StringExtensions.MakeTypeNameFileNameSafe(x.Name)))))
             {
                 this._symbolProvider.Add(keyValuePair);
             }

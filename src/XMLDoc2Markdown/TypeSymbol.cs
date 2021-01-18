@@ -273,9 +273,9 @@ namespace XMLDoc2Markdown
             {
                 throw new InvalidOperationException("SymbolType is null.");
             }
-            if (this.SymbolType.Assembly != typeof(string).Assembly)
+            if (!this.SymbolType.Assembly.IsSystemAssembly())
             {
-                throw new InvalidOperationException($"{this.SymbolType.FullName} is not a mscorlib this.SymbolType.");
+                throw new InvalidOperationException($"{this.SymbolType.FullName} is not a system assembly.");
             }
 
             return (this.SymbolType.FullName is null, this.SymbolType.Namespace is null) switch
@@ -302,7 +302,7 @@ namespace XMLDoc2Markdown
 
         public MarkdownLink GetDocsLink()
         {
-            string url = this.SymbolType.Assembly == typeof(string).Assembly
+            string url = this.SymbolType.Assembly.IsSystemAssembly()
                             ? this.MsDocsUrl()
                             : this.GetInternalDocsUrl();
 
@@ -310,5 +310,6 @@ namespace XMLDoc2Markdown
         }
 
 #endregion
+
     }
 }
