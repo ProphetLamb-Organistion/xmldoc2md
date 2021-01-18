@@ -40,7 +40,7 @@ namespace XMLDoc2Markdown
                     signature.Add("abstract");
                 }
 
-                signature.Add(propertyInfo.GetReturnType()?.ToSymbol().SimplifiedName ?? "???");
+                signature.Add(propertyInfo.GetReturnType()?.ToSymbol().DisplayName ?? "???");
             }
 
             signature.Add(propertyInfo.Name);

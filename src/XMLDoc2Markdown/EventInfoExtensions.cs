@@ -43,7 +43,7 @@ namespace XMLDoc2Markdown
 
                 if (eventInfo.EventHandlerType != null)
                 {
-                    signature.Add(eventInfo.EventHandlerType.ToSymbol().SimplifiedName);
+                    signature.Add(eventInfo.EventHandlerType.ToSymbol().DisplayName);
                 }
             }
 

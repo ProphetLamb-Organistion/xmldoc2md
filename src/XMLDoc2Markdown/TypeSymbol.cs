@@ -183,7 +183,7 @@ namespace XMLDoc2Markdown
 
                 if (baseTypeAndInterfaces.Count > 0)
                 {
-                    this._signaturePostfix = $": {string.Join(", ", baseTypeAndInterfaces.Select(t => t.Namespace != this.SymbolType.Namespace ? t.Namespace + "." : String.Empty + this.DisplayName))}";
+                    this._signaturePostfix = $": {string.Join(", ", baseTypeAndInterfaces.Select(t => (t.Namespace != this.SymbolType.Namespace ? t.Namespace + "." : String.Empty) + t.ToSymbol().DisplayName))}";
                     signature.Add(this._signaturePostfix);
                 }
             }
