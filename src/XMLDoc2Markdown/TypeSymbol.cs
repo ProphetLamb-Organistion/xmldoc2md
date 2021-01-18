@@ -21,7 +21,7 @@ namespace XMLDoc2Markdown
         private string? _displayName;
         private string? _signaturePostfix;
 
-        internal static readonly IReadOnlyDictionary<Type, string> SimplifiedTypeNames = new Dictionary<Type, string>
+        internal static readonly IReadOnlyDictionary<Type, string> PrimitiveTypeNames = new Dictionary<Type, string>
         {
             // void
             { typeof(void), "void" },
@@ -82,9 +82,28 @@ namespace XMLDoc2Markdown
 
         public bool IsWellDefined { get; }
 
+        public string FilePath { get; }
+        public string FileNameWithoutExtension { get; }
+        public string FullFilePathAndName => Path.Combine(this.FilePath, this.FileNameWithoutExtension + ".md");
         public Type SymbolType { get; }
 
         public TypeInfo SymbolTypeInfo => this._symbolTypeInfo ??= this.SymbolType?.GetTypeInfo() ?? throw new InvalidOperationException("SymbolType is null.");
+
+        public Visibility Visibility
+        {
+            get
+            {
+                if (this.SymbolType is null)
+                {
+                    throw new InvalidOperationException("SymbolType is null.");
+                }
+                return this.SymbolType.IsVisible
+                    ? Visibility.Public 
+                    : this.SymbolType.IsNestedPrivate || this.SymbolTypeInfo.IsNotPublic
+                    ? Visibility.Private
+                    : Visibility.None;
+            }
+        }
 
         public string SimplifiedName
         {
@@ -95,11 +114,36 @@ namespace XMLDoc2Markdown
                     throw new InvalidOperationException("SymbolType is null.");
                 }
 
-                return this._simplifiedName ??= SimplifiedTypeNames.TryGetValue(this.SymbolType, out string? simplifiedName) ? simplifiedName : this.SymbolType.Name;
+                if (this._simplifiedName != null)
+                {
+                    return this._simplifiedName;
+                }
+
+                if (PrimitiveTypeNames.TryGetValue(this.SymbolType, out this._simplifiedName))
+                {
+                    return this._simplifiedName!;
+                }
+
+                int gravisIndex = this.SymbolType.Name.IndexOf('`');
+                if (gravisIndex == -1)
+                {
+                    this._simplifiedName = this.SymbolType.Name;
+                }
+                else
+                {
+                    var sb = new StringBuilder();
+                    sb.Append(this.SymbolType.Name[..gravisIndex]);
+                    sb.Append('<');
+                    sb.Append(new string(',', this.SymbolType.Name[gravisIndex + 1] - 0x31));
+                    sb.Append('>');
+                    this._simplifiedName = sb.ToString();
+                }
+
+                return this._simplifiedName;
             }
         }
 
-        public Visibility Visibility
+        public string DisplayName
         {
             get
             {
@@ -107,15 +151,66 @@ namespace XMLDoc2Markdown
                 {
                     throw new InvalidOperationException("SymbolType is null.");
                 }
-                return this.SymbolType.IsPublic ? Visibility.Public : Visibility.None;
+
+                if (!(this._displayName is null))
+                {
+                    return this._displayName;
+                }
+
+                if (PrimitiveTypeNames.ContainsKey(this.SymbolType))
+                {
+                    return this.SimplifiedName;
+                }
+
+                /*
+                 * Convert generic type parameters from gravis notation to type notation.
+                 *
+                 * For classes:
+                 *   Nested type inherit the generic type parameters of their parents. But these are not reflected in the Name property, only in FullName.
+                 *   In these scenarios some declaring types (parentage) are necessary for the DisplayName.
+                 */
+
+                StringBuilder sb = new StringBuilder(255);
+                List<Type> genericTypeSpecifiers = new List<Type>(this.SymbolTypeInfo.GenericTypeParameters.Length + this.SymbolTypeInfo.GenericTypeArguments.Length);
+                genericTypeSpecifiers.AddRange(this.SymbolTypeInfo.GenericTypeParameters);
+                genericTypeSpecifiers.AddRange(this.SymbolTypeInfo.GenericTypeArguments);
+
+                if ((this.SymbolTypeInfo.IsClass || this.SymbolTypeInfo.IsValueType) && this.SymbolTypeInfo.IsNested)
+                {
+                    // Remove generic type parameters already defined in declaring types.
+                    TypeInfo? parentInfo = this.SymbolTypeInfo.DeclaringType?.GetTypeInfo();
+                    while (!(parentInfo is null) && (parentInfo.IsGenericType || parentInfo.IsGenericTypeDefinition))
+                    {
+                        foreach (Type p in parentInfo.GenericTypeParameters)
+                        {
+                            genericTypeSpecifiers.RemoveAll(x => String.Equals(x.Name, p.Name, StringComparison.Ordinal));
+                        }
+                        parentInfo = parentInfo.DeclaringType?.GetTypeInfo();
+                    }
+                
+                    // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
+                    if (this.SymbolTypeInfo.GenericTypeParameters.Length + this.SymbolTypeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
+                    {
+                        sb.Append(this.SymbolTypeInfo.DeclaringType?.ToSymbol().DisplayName)
+                          .Append(".");
+                    }
+                }
+                
+                // Get the base name of the this.SymbolType.
+                int gravisIndex = this.SymbolType.Name.IndexOf('`'); // Indicates beginning of the generic type parameter portion of the name.
+                sb.Append(gravisIndex == -1 ? this.SymbolType.Name : this.SymbolType.Name.Substring(0, gravisIndex));
+                
+                if (genericTypeSpecifiers.Count != 0)
+                {
+                    sb.Append('<');
+                    sb.AppendJoin(", ", genericTypeSpecifiers.Select(t => t.ToSymbol().DisplayName));
+                    sb.Append('>');
+                }
+
+                this._displayName = sb.ToString();
+                return this._displayName;
             }
         }
-
-        public string FilePath { get; }
-
-        public string FileNameWithoutExtension { get; }
-
-        public string FullFilePathAndName => Path.Combine(this.FilePath, this.FileNameWithoutExtension + ".md");
 
 #endregion
 
@@ -131,7 +226,10 @@ namespace XMLDoc2Markdown
 
             if (full)
             {
-                signature.Add(this.Visibility.Print());
+                if (this.Visibility != Visibility.None)
+                {
+                    signature.Add(this.Visibility.Print());
+                }
 
                 if (this.SymbolType.IsClass)
                 {
@@ -177,82 +275,22 @@ namespace XMLDoc2Markdown
                 if (this.SymbolType.IsClass && this.SymbolType.BaseType != null && this.SymbolType.BaseType != typeof(object))
                 {
                     baseTypeAndInterfaces.Add(this.SymbolType.BaseType);
+                    Type[] baseTypeInterfaces = this.SymbolType.BaseType.GetInterfaces(); // Skip interfaces declared in base type.
+                    baseTypeAndInterfaces.AddRange(this.SymbolType.GetInterfaces().Where(i => Array.IndexOf(baseTypeInterfaces, i) == -1));
                 }
-
-                baseTypeAndInterfaces.AddRange(this.SymbolType.GetInterfaces());
+                else
+                {
+                    baseTypeAndInterfaces.AddRange(this.SymbolType.GetInterfaces());
+                }
 
                 if (baseTypeAndInterfaces.Count > 0)
                 {
-                    this._signaturePostfix = $": {string.Join(", ", baseTypeAndInterfaces.Select(t => (t.Namespace != this.SymbolType.Namespace ? t.Namespace + "." : String.Empty) + t.ToSymbol().DisplayName))}";
+                    this._signaturePostfix = $": {string.Join(", ", baseTypeAndInterfaces.Select(t => (t.Namespace != this.SymbolType.Namespace ? t.Namespace + "." : string.Empty) + (full ? t.ToSymbol().DisplayName : t.ToSymbol().SimplifiedName)))}";
                     signature.Add(this._signaturePostfix);
                 }
             }
 
             return string.Join(' ', signature);
-        }
-
-        public string DisplayName
-        {
-            get
-            {
-                if (this.SymbolType is null)
-                {
-                    throw new InvalidOperationException("SymbolType is null.");
-                }
-
-                if (!(this._displayName is null))
-                {
-                    return this._displayName;
-                }
-
-                /*
-                 * Convert generic type parameters from gravis notation to type notation.
-                 *
-                 * For classes:
-                 *   Nested type inherit the generic type parameters of their parents. But these are not reflected in the Name property, only in FullName.
-                 *   In these scenarios some declaring types (parentage) are necessary for the DisplayName.
-                 */
-
-                StringBuilder sb = new StringBuilder(255);
-                List<Type> genericTypeSpecifiers = new List<Type>(this.SymbolTypeInfo.GenericTypeParameters.Length + this.SymbolTypeInfo.GenericTypeArguments.Length);
-                genericTypeSpecifiers.AddRange(this.SymbolTypeInfo.GenericTypeParameters);
-                genericTypeSpecifiers.AddRange(this.SymbolTypeInfo.GenericTypeArguments);
-
-                if ((this.SymbolTypeInfo.IsClass || this.SymbolTypeInfo.IsValueType) && this.SymbolTypeInfo.IsNested)
-                {
-                    // Remove generic type parameters already defined in declaring types.
-                    TypeInfo? parentInfo = this.SymbolTypeInfo.DeclaringType?.GetTypeInfo();
-                    while (!(parentInfo is null) && parentInfo.IsGenericType)
-                    {
-                        foreach (Type p in parentInfo.GenericTypeParameters)
-                        {
-                            genericTypeSpecifiers.RemoveAll(x => String.Equals(x.Name, p.Name, StringComparison.Ordinal));
-                        }
-                        parentInfo = parentInfo.DeclaringType?.GetTypeInfo();
-                    }
-                
-                    // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
-                    if (this.SymbolTypeInfo.GenericTypeParameters.Length + this.SymbolTypeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
-                    {
-                        sb.Append(this.SymbolTypeInfo.DeclaringType?.ToSymbol().DisplayName)
-                          .Append(".");
-                    }
-                }
-                
-                // Get the base name of the this.SymbolType.
-                int gravisIndex = this.SymbolType.Name.IndexOf('`'); // Indicates beginning of the generic type parameter portion of the name.
-                sb.Append(gravisIndex == -1 ? this.SymbolType.Name : this.SymbolType.Name.Substring(0, gravisIndex));
-                
-                if (genericTypeSpecifiers.Count != 0)
-                {
-                    sb.Append('<');
-                    sb.AppendJoin(", ", genericTypeSpecifiers.Select(t => t.ToSymbol().DisplayName));
-                    sb.Append('>');
-                }
-
-                this._displayName = sb.ToString();
-                return this._displayName;
-            }
         }
 
         public IEnumerable<TypeSymbol> GetInheritanceHierarchy()
@@ -289,22 +327,28 @@ namespace XMLDoc2Markdown
             };
         }
 
-        public string GetInternalDocsUrl(TypeSymbol? relativeTo = null)
+        public string GetInternalDocsUrl(TypeSymbol? relativeTo)
         {
-            if (this.SymbolType is null)
+            if (this.FullFilePathAndName is null)
             {
-                throw new InvalidOperationException("SymbolType is null.");
+                throw new InvalidOperationException("FullFilePathAndName is null.");
             }
 
-            return Path.GetRelativePath(relativeTo is null ? s_virtualDeviceRoot : Path.Combine(s_virtualDeviceRoot, relativeTo.FullFilePathAndName),
-                                        Path.Combine(s_virtualDeviceRoot, this.FilePath));
+            if (relativeTo is null) // Assume we are at root
+            {
+                return this.FullFilePathAndName;
+            }
+
+            var rel = Path.Combine(s_virtualDeviceRoot, relativeTo.FilePath);
+            var tar = Path.Combine(s_virtualDeviceRoot, this.FullFilePathAndName);
+            return Path.GetRelativePath(rel, tar);
         }
 
-        public MarkdownLink GetDocsLink()
+        public MarkdownLink GetDocsLink(TypeSymbol? relativeTo = null)
         {
             string url = this.SymbolType.Assembly.IsSystemAssembly()
                             ? this.MsDocsUrl()
-                            : this.GetInternalDocsUrl();
+                            : this.GetInternalDocsUrl(relativeTo);
 
             return new MarkdownLink(this.DisplayName.FormatChevrons(), url);
         }

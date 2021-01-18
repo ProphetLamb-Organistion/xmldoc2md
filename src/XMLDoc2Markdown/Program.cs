@@ -182,7 +182,7 @@ namespace XMLDoc2Markdown
             
             IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader(assembly.GetName().Name, 1);
 
-            TypeSymbolProvider.Instance.Add("index", String.Empty, indexPageName + ".md");
+            TypeSymbolProvider.Instance.Add("index", String.Empty, indexPageName);
             // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
             TypeSymbolProvider.Instance.Add(LoadAssemblyTypes(assembly).Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null && t.Namespace != null));
 
@@ -196,7 +196,7 @@ namespace XMLDoc2Markdown
                 string documentationDir = typeNamespaceGrouping.First().FilePath;
                 EnsureDirectory(documentationDir);
 
-                indexPage.AppendHeader(new MarkdownInlineCode(typeNamespaceGrouping.Key), 2);
+                indexPage.AppendHeader(typeNamespaceGrouping.Key, 2);
                 indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping!, outputPath, documentation, assembly));
             }
 

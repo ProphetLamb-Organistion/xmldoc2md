@@ -14,7 +14,7 @@ namespace XMLDoc2Markdown
         private readonly Assembly assembly;
         private readonly TypeSymbol symbol;
         private readonly XmlDocumentation documentation;
-        private readonly IMarkdownDocument document = new MarkdownDocument();
+        private IMarkdownDocument document = new MarkdownDocument();
 
         public TypeDocumentation(Assembly assembly, TypeSymbol symbol, XmlDocumentation documentation)
         {
@@ -26,7 +26,7 @@ namespace XMLDoc2Markdown
         public override string ToString()
         {
             Type type = this.symbol.SymbolType;
-            this.document.AppendHeader(this.symbol.DisplayName.FormatChevrons(), 1);
+            this.document.AppendHeader(this.symbol.SimplifiedName.FormatChevrons(), 1);
 
             this.document.AppendParagraph($"Namespace: {type.Namespace}");
 
@@ -38,13 +38,13 @@ namespace XMLDoc2Markdown
 
             if (type.BaseType != null)
             {
-                this.document.AppendParagraph($"Inheritance {string.Join(" → ", this.symbol.GetInheritanceHierarchy().Reverse().Select(t => t.GetDocsLink()))}");
+                this.document.AppendParagraph($"Inheritance {string.Join(" → ", this.symbol.GetInheritanceHierarchy().Reverse().Select(t => t.GetDocsLink(this.symbol)))}");
             }
 
             Type[] interfaces = type.GetInterfaces();
             if (interfaces.Length > 0)
             {
-                this.document.AppendParagraph($"Implements {string.Join(", ", interfaces.Select(i => i.ToSymbol().GetDocsLink()))}");
+                this.document.AppendParagraph($"Implements {string.Join(", ", interfaces.Select(i => i.ToSymbol().GetDocsLink(this.symbol)))}");
             }
 
             this.WriteMembersDocumentation(type.GetProperties());
@@ -61,6 +61,8 @@ namespace XMLDoc2Markdown
             {
                 this.WriteEnumFields(type.GetFields().Where(m => !m.IsSpecialName));
             }
+
+            this.document.AppendParagraph(new MarkdownLink("`< Index`", TypeSymbolProvider.Instance["index"].GetInternalDocsUrl(this.symbol)));
 
             return this.document.ToString();
         }
@@ -79,7 +81,10 @@ namespace XMLDoc2Markdown
                         _ => null
                     });
             }
-            this.document.AppendParagraph(summary);
+            if (!string.IsNullOrWhiteSpace(summary))
+            {
+                this.document.AppendParagraph(summary);
+            }
         }
 
         private string? PrintSummaryXElement(XElement element)
@@ -130,11 +135,13 @@ namespace XMLDoc2Markdown
 
                 this.WriteMemberInfoSummary(memberDocElement);
                 this.WriteMemberInfoSignature(member);
-
+                
                 switch (member)
                 {
                     case MethodBase methodBase:
                     {
+                        IMarkdownDocument doc = this.document;
+                        this.document = this.document.CreateBlockquoteDocument();
                         this.WriteTypeParameters(methodBase, memberDocElement);
                         this.WriteMethodParams(methodBase, memberDocElement);
 
@@ -142,22 +149,26 @@ namespace XMLDoc2Markdown
                         {
                             this.WriteMethodReturnType(methodInfo, memberDocElement);
                         }
-
+                        this.document = doc;
                         break;
                     }
                     case PropertyInfo propertyInfo:
                     {
+                        IMarkdownDocument doc = this.document;
+                        this.document = this.document.CreateBlockquoteDocument();
                         this.document.AppendHeader("Property Value", 4);
 
                         string? valueDoc = memberDocElement?.Element("value")?.Value;
                         this.document.AppendParagraph(
-                            $"{propertyInfo.GetReturnType()?.ToSymbol().DisplayName}<br>{valueDoc}");
+                            $"{new MarkdownInlineCode(propertyInfo.GetReturnType()?.ToSymbol().DisplayName)}<br>{valueDoc}");
+                        this.document = doc;
                         break;
                     }
                 }
 
                 this.WriteExceptions(memberDocElement);
             }
+            this.document.AppendHorizontalRule();
         }
 
         private void WriteExceptions(XElement? memberDocElement)
@@ -249,7 +260,7 @@ namespace XMLDoc2Markdown
                 {
                     string? paramDoc = memberDocElement?.Elements("param").FirstOrDefault(e => e.Attribute("name")?.Value == param.Name)?.Value;
                     this.document.AppendParagraph(
-                        $"{new MarkdownInlineCode(param.Name)} {param.ParameterType.Name}<br>{paramDoc}");
+                        $"{param.Name} : {new MarkdownInlineCode(param.ParameterType.ToSymbol().SimplifiedName)}<br>{paramDoc}");
                 }
             }
         }
@@ -302,7 +313,7 @@ namespace XMLDoc2Markdown
                 Type? type = Type.GetType(memberFullName) ?? this.assembly.GetType(memberFullName);
                 if (type != null)
                 {
-                    return type.ToSymbol().GetDocsLink();
+                    return type.ToSymbol().GetDocsLink(this.symbol);
                 }
             }
 

@@ -59,9 +59,7 @@ namespace XMLDoc2Markdown
 
                 if (methodBase is MethodInfo methodInfo)
                 {
-                    TypeSymbol returnType = methodInfo.ReturnType.ToSymbol();
-                    // void is a keyword, whereas Void is not
-                    signature.Add(returnType.SymbolType.Name == "Void" ? "void" : returnType.DisplayName);
+                    signature.Add(methodInfo.ReturnType.ToSymbol().DisplayName);
                 }
             }
 
@@ -81,7 +79,7 @@ namespace XMLDoc2Markdown
             }
             ParameterInfo[] @params = methodBase.GetParameters();
             IEnumerable<string> paramsNames = @params
-                .Select(p => $"{(full ? p.ParameterType.ToSymbol().DisplayName : p.ParameterType.ToSymbol().DisplayName)}{(full ? $" {p.Name}" : null)}");
+                .Select(p => $"{(full ? p.ParameterType.ToSymbol().DisplayName : p.ParameterType.ToSymbol().SimplifiedName)}{(full ? $" {p.Name}" : null)}");
             displayName += $"({string.Join(", ", paramsNames)})";
             signature.Add(displayName);
 
