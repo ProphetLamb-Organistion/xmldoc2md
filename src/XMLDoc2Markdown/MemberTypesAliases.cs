@@ -5,23 +5,16 @@ namespace XMLDoc2Markdown
 {
     internal static class MemberTypesAliases
     {
-        internal static readonly (MemberTypes memberType, char alias)[] ALIASES = {
-            (MemberTypes.Constructor, 'M'),
-            (MemberTypes.Event, 'E'),
-            (MemberTypes.Field, 'F'),
-            (MemberTypes.Method, 'M'),
-            (MemberTypes.TypeInfo, 'T'),
-            (MemberTypes.NestedType, 'T'),
-            (MemberTypes.Property, 'P'),
-        };
+        internal static readonly (MemberTypes memberType, char alias)[] ALIASES = {(MemberTypes.Constructor, 'M'), (MemberTypes.Event, 'E'), (MemberTypes.Field, 'F'), (MemberTypes.Method, 'M'), (MemberTypes.TypeInfo, 'T'), (MemberTypes.NestedType, 'T'), (MemberTypes.Property, 'P')};
 
         /// <summary>
-        /// Gets the alias associated with the specified member type.
+        ///     Gets the alias associated with the specified member type.
         /// </summary>
         /// <param name="memberType">The member type of the alias to get.</param>
         /// <param name="alias">
-        /// When this method returns, contains the alias associated with the specified member type, if the member type is found;
-        /// otherwise, the default char. This parameter is passed uninitialized
+        ///     When this method returns, contains the alias associated with the specified member type, if the member type is
+        ///     found;
+        ///     otherwise, the default char. This parameter is passed uninitialized
         /// </param>
         /// <returns>true if the member type is found; otherwise, false</returns>
         internal static bool TryGetAlias(MemberTypes memberType, out char alias)
@@ -38,12 +31,12 @@ namespace XMLDoc2Markdown
         }
 
         /// <summary>
-        /// Gets the member type associated with the specified alias.
+        ///     Gets the member type associated with the specified alias.
         /// </summary>
         /// <param name="memberType">The alias of the member type to get.</param>
         /// <param name="alias">
-        /// When this method returns, contains the member type associated with the specified alias, if the alias is found;
-        /// otherwise, the default member type. This parameter is passed uninitialized
+        ///     When this method returns, contains the member type associated with the specified alias, if the alias is found;
+        ///     otherwise, the default member type. This parameter is passed uninitialized
         /// </param>
         /// <returns>true if the alias is found; otherwise, false</returns>
         internal static bool TryGetMemberType(char alias, out MemberTypes memberType)

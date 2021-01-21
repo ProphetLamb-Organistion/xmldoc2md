@@ -2,9 +2,8 @@
 {
     internal static class VisibilityExtensions
     {
-        internal static string Print(this Visibility visibility)
-        {
-            return visibility switch
+        internal static string Print(this Visibility visibility) =>
+            visibility switch
             {
                 Visibility.Public => "public",
                 Visibility.Internal => "internal",
@@ -13,6 +12,5 @@
                 Visibility.Private => "private",
                 _ => string.Empty
             };
-        }
     }
 }

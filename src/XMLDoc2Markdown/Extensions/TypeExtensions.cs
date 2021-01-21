@@ -13,33 +13,30 @@ namespace XMLDoc2Markdown.Extensions
         internal static readonly IReadOnlyDictionary<Type, string> simplifiedTypeNames = new Dictionary<Type, string>
         {
             // void
-            { typeof(void), "void" },
+            {typeof(void), "void"},
             // object
-            { typeof(object), "object" },
+            {typeof(object), "object"},
             // bool
-            { typeof(bool), "bool" },
+            {typeof(bool), "bool"},
             // numeric
-            { typeof(sbyte), "sbyte" },
-            { typeof(byte), "byte" },
-            { typeof(short), "short" },
-            { typeof(ushort), "ushort" },
-            { typeof(int), "int" },
-            { typeof(uint), "uint" },
-            { typeof(long), "long" },
-            { typeof(ulong), "ulong" },
-            { typeof(float), "float" },
-            { typeof(double), "double" },
-            { typeof(decimal), "decimal" },
+            {typeof(sbyte), "sbyte"},
+            {typeof(byte), "byte"},
+            {typeof(short), "short"},
+            {typeof(ushort), "ushort"},
+            {typeof(int), "int"},
+            {typeof(uint), "uint"},
+            {typeof(long), "long"},
+            {typeof(ulong), "ulong"},
+            {typeof(float), "float"},
+            {typeof(double), "double"},
+            {typeof(decimal), "decimal"},
             // text
-            { typeof(char), "char" },
-            { typeof(string), "string" },
+            {typeof(char), "char"},
+            {typeof(string), "string"}
         };
 
         [Obsolete]
-        internal static string GetSimplifiedName(this Type type)
-        {
-            return simplifiedTypeNames.TryGetValue(type, out string? simplifiedName) ? simplifiedName : type.Name;
-        }
+        internal static string GetSimplifiedName(this Type type) => simplifiedTypeNames.TryGetValue(type, out string? simplifiedName) ? simplifiedName : type.Name;
 
         [Obsolete]
         internal static Visibility GetVisibility(this Type type)
@@ -48,10 +45,8 @@ namespace XMLDoc2Markdown.Extensions
             {
                 return Visibility.Public;
             }
-            else
-            {
-                return Visibility.None;
-            }
+
+            return Visibility.None;
         }
 
         [Obsolete]
@@ -143,21 +138,22 @@ namespace XMLDoc2Markdown.Extensions
                     {
                         genericTypeSpecifiers.RemoveAll(x => String.Equals(x.Name, p.Name, StringComparison.Ordinal));
                     }
+
                     parentInfo = parentInfo.DeclaringType?.GetTypeInfo();
                 }
-            
+
                 // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
                 if (typeInfo.GenericTypeParameters.Length + typeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
                 {
                     sb.Append(typeInfo.DeclaringType?.ToSymbol().DisplayName ?? "???")
-                      .Append(".");
+                       .Append(".");
                 }
             }
-            
+
             // Get the base name of the type.
             int gravisIndex = type.Name.IndexOf('`'); // Indicates beginning of the generic type parameter portion of the name.
             sb.Append(gravisIndex == -1 ? type.Name : type.Name.Substring(0, gravisIndex));
-            
+
             if (genericTypeSpecifiers.Count != 0)
             {
                 sb.Append('<');
@@ -184,6 +180,7 @@ namespace XMLDoc2Markdown.Extensions
             {
                 throw new ArgumentNullException(nameof(type), "Type cannot be null.");
             }
+
             if (type.Assembly != typeof(string).Assembly)
             {
                 throw new InvalidOperationException($"{type.FullName} is not a mscorlib type.");
@@ -192,11 +189,11 @@ namespace XMLDoc2Markdown.Extensions
             return (type.FullName is null, type.Namespace is null) switch
             {
                 (true, true) => // Navigate to search specifying that we are looking for API
-                    $"{msdocsBaseUrl}search/?terms=api%20{type.Name}&category=Reference&scope=.NET",
+                $"{msdocsBaseUrl}search/?terms=api%20{type.Name}&category=Reference&scope=.NET",
                 (true, false) => // Try to reconstruct from namespace, not guaranteed to hit.
-                    $"{msdocsBaseUrl}dotnet/api/{type.Namespace!.ToLower().Replace('`', '-')}.{type.Name.ToLower().Replace('`', '-')}",
+                $"{msdocsBaseUrl}dotnet/api/{type.Namespace!.ToLower().Replace('`', '-')}.{type.Name.ToLower().Replace('`', '-')}",
                 _ => // Navigate to documentation
-                    $"{msdocsBaseUrl}dotnet/api/{type.FullName!.ToLower().Replace('`', '-')}"
+                $"{msdocsBaseUrl}dotnet/api/{type.FullName!.ToLower().Replace('`', '-')}"
             };
         }
 
@@ -215,20 +212,14 @@ namespace XMLDoc2Markdown.Extensions
         internal static MarkdownLink GetDocsLink(this Type type)
         {
             string url = type.Assembly == typeof(string).Assembly
-                            ? type.GetMSDocsUrl()
-                            : type.GetInternalDocsUrl();
+                ? type.GetMSDocsUrl()
+                : type.GetInternalDocsUrl();
 
             return new MarkdownLink(type.GetDisplayName().FormatChevrons(), url);
         }
 
-        public static TypeSymbol ToSymbol(this Type type)
-        {
-            return TypeSymbolProvider.Instance.TryGetValue(type.GetTypeSymbolIdentifier(), out TypeSymbol? symbol) ? symbol : new TypeSymbol(type);
-        }
+        public static TypeSymbol ToSymbol(this Type type) => TypeSymbolProvider.Instance.TryGetValue(type.GetTypeSymbolIdentifier(), out TypeSymbol? symbol) ? symbol : new TypeSymbol(type);
 
-        public static string GetTypeSymbolIdentifier(this Type type)
-        {
-            return String.Concat(type.Namespace, ".", type.Name.Replace('`', '-'));
-        }
+        public static string GetTypeSymbolIdentifier(this Type type) => String.Concat(type.Namespace, ".", type.Name.Replace('`', '-'));
     }
 }

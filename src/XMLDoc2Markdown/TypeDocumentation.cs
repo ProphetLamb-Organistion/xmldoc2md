@@ -2,9 +2,10 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Xml;
 using System.Xml.Linq;
+
 using Dawn;
+
 using Markdown;
 
 using XMLDoc2Markdown.Extensions;
@@ -14,8 +15,8 @@ namespace XMLDoc2Markdown
     internal class TypeDocumentation
     {
         private readonly Assembly assembly;
-        private readonly TypeSymbol symbol;
         private readonly XmlDocumentation documentation;
+        private readonly TypeSymbol symbol;
         private IMarkdownDocument document = new MarkdownDocument();
 
         public TypeDocumentation(Assembly assembly, TypeSymbol symbol, XmlDocumentation documentation)
@@ -33,7 +34,7 @@ namespace XMLDoc2Markdown
             this.document.AppendParagraph($"Namespace: {type.Namespace}");
 
             XElement? typeDocElement = this.documentation.GetMember(type);
-            
+
             this.WriteMemberInfoSummary(typeDocElement);
             this.WriteMemberInfoSignature(type);
             this.WriteTypeParameters(type, typeDocElement);
@@ -53,10 +54,9 @@ namespace XMLDoc2Markdown
             this.WriteMembersDocumentation(type.GetConstructors());
             this.WriteMembersDocumentation(
                 type
-                    .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
-                    .Where(m => !m.IsSpecialName)
-                    .Where(m => !m.IsPrivate)
-                );
+                   .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static | BindingFlags.DeclaredOnly)
+                   .Where(m => !m.IsSpecialName)
+                   .Where(m => !m.IsPrivate));
             this.WriteMembersDocumentation(type.GetEvents());
 
             if (type.IsEnum)
@@ -75,36 +75,35 @@ namespace XMLDoc2Markdown
             IEnumerable<XNode>? nodes = memberDocElement?.Element("summary")?.Nodes();
             if (nodes != null)
             {
-                summary = nodes.Aggregate(summary, (current, node) => current + node 
-                    switch 
-                    {
-                        XText text => text,
-                        XElement element => this.PrintSummaryXElement(element),
-                        _ => null
-                    });
+                summary = nodes.Aggregate(
+                    summary,
+                    (current, node) => current
+                      + node
+                            switch
+                            {
+                                XText text => text,
+                                XElement element => this.PrintSummaryXElement(element),
+                                _ => null
+                            });
             }
+
             if (!string.IsNullOrWhiteSpace(summary))
             {
                 this.document.AppendParagraph(summary);
             }
         }
 
-        private string? PrintSummaryXElement(XElement element)
-        {
-            return element.Name.ToString() switch
+        private string? PrintSummaryXElement(XElement element) =>
+            element.Name.ToString() switch
             {
                 "see" => this.GetLinkFromReference(element.Attribute("cref")?.Value).ToString(),
                 _ => element.Value
             };
-        }
 
-        private void WriteMemberInfoSignature(MemberInfo memberInfo)
-        {
+        private void WriteMemberInfoSignature(MemberInfo memberInfo) =>
             this.document.AppendCode(
                 "csharp",
-                memberInfo.GetSignature(full: true)
-            );
-        }
+                memberInfo.GetSignature(true));
 
         private void WriteMembersDocumentation(IEnumerable<MemberInfo> members)
         {
@@ -137,7 +136,7 @@ namespace XMLDoc2Markdown
 
                 this.WriteMemberInfoSummary(memberDocElement);
                 this.WriteMemberInfoSignature(member);
-                
+
                 switch (member)
                 {
                     case MethodBase methodBase:
@@ -151,6 +150,7 @@ namespace XMLDoc2Markdown
                         {
                             this.WriteMethodReturnType(methodInfo, memberDocElement);
                         }
+
                         this.document = doc;
                         break;
                     }
@@ -161,8 +161,7 @@ namespace XMLDoc2Markdown
                         this.document.AppendHeader("Property Value", 4);
 
                         string? valueDoc = memberDocElement?.Element("value")?.Value;
-                        this.document.AppendParagraph(
-                            $"{new MarkdownInlineCode(propertyInfo.GetReturnType()?.ToSymbol().DisplayName)}<br>{valueDoc}");
+                        this.document.AppendParagraph($"{new MarkdownInlineCode(propertyInfo.GetReturnType()?.ToSymbol().DisplayName)}<br>{valueDoc}");
                         this.document = doc;
                         break;
                     }
@@ -170,6 +169,7 @@ namespace XMLDoc2Markdown
 
                 this.WriteExceptions(memberDocElement);
             }
+
             this.document.AppendHorizontalRule();
         }
 
@@ -218,8 +218,7 @@ namespace XMLDoc2Markdown
             this.document.AppendHeader("Returns", 4);
 
             string? returnsDoc = memberDocElement?.Element("returns")?.Value;
-            this.document.AppendParagraph(
-                $"{methodInfo.ReturnType.ToSymbol().DisplayName}<br>{returnsDoc}");
+            this.document.AppendParagraph($"{methodInfo.ReturnType.ToSymbol().DisplayName}<br>{returnsDoc}");
         }
 
         private void WriteTypeParameters(MemberInfo memberInfo, XElement? memberDocElement)
@@ -243,8 +242,7 @@ namespace XMLDoc2Markdown
             foreach (Type typeParam in typeParams)
             {
                 string? typeParamDoc = memberDocElement?.Elements("typeparam").FirstOrDefault(e => e.Attribute("name")?.Value == typeParam.Name)?.Value;
-                this.document.AppendParagraph(
-                    $"{new MarkdownInlineCode(typeParam.ToSymbol().DisplayName)}<br>{typeParamDoc}");
+                this.document.AppendParagraph($"{new MarkdownInlineCode(typeParam.ToSymbol().DisplayName)}<br>{typeParamDoc}");
             }
         }
 
@@ -261,8 +259,7 @@ namespace XMLDoc2Markdown
                 foreach (ParameterInfo param in @params)
                 {
                     string? paramDoc = memberDocElement?.Elements("param").FirstOrDefault(e => e.Attribute("name")?.Value == param.Name)?.Value;
-                    this.document.AppendParagraph(
-                        $"{param.Name} : {new MarkdownInlineCode(param.ParameterType.ToSymbol().SimplifiedName)}<br>{paramDoc}");
+                    this.document.AppendParagraph($"{param.Name} : {new MarkdownInlineCode(param.ParameterType.ToSymbol().SimplifiedName)}<br>{paramDoc}");
                 }
             }
         }
@@ -278,8 +275,7 @@ namespace XMLDoc2Markdown
                 var header = new MarkdownTableHeader(
                     new MarkdownTableHeaderCell("Name"),
                     new MarkdownTableHeaderCell("Value", MarkdownTableTextAlignment.Right),
-                    new MarkdownTableHeaderCell("Description")
-                );
+                    new MarkdownTableHeaderCell("Description"));
 
                 var table = new MarkdownTable(header, fields.Count());
 

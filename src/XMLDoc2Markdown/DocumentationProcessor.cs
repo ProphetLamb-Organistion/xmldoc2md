@@ -13,6 +13,9 @@ using Markdown;
 
 using XMLDoc2Markdown.AssemblyHelpers;
 using XMLDoc2Markdown.Extensions;
+using XMLDoc2Markdown.Project;
+
+using Assembly = System.Reflection.Assembly;
 
 namespace XMLDoc2Markdown
 {
@@ -21,8 +24,8 @@ namespace XMLDoc2Markdown
         [STAThread]
         public static void WriteCurrentProjectConfiguration(string outputPath)
         {
-            Project.Project project = Project.Configuration.Current;
-            
+            Project.Project project = Configuration.Current;
+
             TypeSymbolProvider.Instance.Add("index", outputPath, project.Properties.Index.Name);
             IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader("Index", 1);
 
@@ -36,15 +39,14 @@ namespace XMLDoc2Markdown
                 }
             }
 
-
             File.WriteAllText(TypeSymbolProvider.Instance["index"].FilePath, indexPage.ToString());
         }
-        
+
         [STAThread]
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ProcessAssembly(int assemblyIndex, string outputPath, IMarkdownDocument indexPage, out WeakReference loadContextWeakReference)
         {
-            Project.Project project = Project.Configuration.Current;
+            Project.Project project = Configuration.Current;
             string assemblyFilePath = project.Assembly[assemblyIndex].File;
 
             Func<string?, bool> namespaceFilter = _ => true;
@@ -79,7 +81,7 @@ namespace XMLDoc2Markdown
             string[]? nugetReferences = project.Assembly[assemblyIndex].References?.NugetReference;
             if (nugetReferences != null)
             {
-                string tempoaryDirectory = Path.Combine(Path.GetTempPath(), "XMLDoc2Markdown", Path.GetFileNameWithoutExtension(assemblyFilePath)+ '\\');
+                string tempoaryDirectory = Path.Combine(Path.GetTempPath(), "XMLDoc2Markdown", Path.GetFileNameWithoutExtension(assemblyFilePath) + '\\');
                 foreach (string sourceFilePath in nugetReferences)
                 {
                     string nugetFileName = Path.GetFileName(sourceFilePath);
@@ -108,6 +110,7 @@ namespace XMLDoc2Markdown
                         }
                     }
                 }
+
                 Directory.Delete(tempoaryDirectory);
             }
 
@@ -115,18 +118,18 @@ namespace XMLDoc2Markdown
             Assembly assembly = assemblyLoadContext.LoadFromAssemblyPath(assemblyFilePath);
 
             var documentation = new XmlDocumentation(assemblyFilePath);
-            
+
             indexPage.AppendHeader(assembly.GetName().Name, 2);
 
             // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
             TypeSymbolProvider.Instance.Add(LoadAssemblyTypes(assembly).Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null && t.Namespace != null));
 
             foreach (IGrouping<string?, TypeSymbol> typeNamespaceGrouping in TypeSymbolProvider
-                                                                           .Instance
-                                                                           .Select(kvp => kvp.Value)
-                                                                           .GroupBy(type => type.SymbolType.Namespace)
-                                                                           .Where(g =>  namespaceFilter(g.Key))
-                                                                           .OrderBy(g => g.Key))
+               .Instance
+               .Select(kvp => kvp.Value)
+               .GroupBy(type => type.SymbolType.Namespace)
+               .Where(g => namespaceFilter(g.Key))
+               .OrderBy(g => g.Key))
             {
                 string documentationDir = typeNamespaceGrouping.First().Directory;
                 EnsureDirectory(documentationDir);
@@ -138,7 +141,7 @@ namespace XMLDoc2Markdown
             // Unload assembly
             assemblyLoadContext.Unload();
         }
-        
+
         private static Type[] LoadAssemblyTypes(Assembly assembly)
         {
             Type[] assemblyTypes;
@@ -162,6 +165,7 @@ namespace XMLDoc2Markdown
                             Console.WriteLine(log);
                         }
                     }
+
                     sb.AppendLine($"\r\n\r\n LoaderExceptions: other Exceptions: {ex.LoaderExceptions.Count(x => !(x is FileNotFoundException))} -----");
                     foreach (Exception? subEx in ex.LoaderExceptions.Where(x => !(x is FileNotFoundException)))
                     {
@@ -171,6 +175,7 @@ namespace XMLDoc2Markdown
                         }
                     }
                 }
+
                 Console.WriteLine(sb);
                 throw;
             }
@@ -191,6 +196,7 @@ namespace XMLDoc2Markdown
 
                 File.WriteAllText(fullFileName, new TypeDocumentation(assembly, symbol, documentation).ToString());
             }
+
             return list;
         }
 

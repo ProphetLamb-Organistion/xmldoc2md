@@ -13,8 +13,8 @@ namespace XMLDoc2Markdown.Project
 {
     public static class Configuration
     {
-        private static Project? s_current;
         private const string s_xmlSchemaFileName = @".\ProjectSChema.xsd";
+        private static Project? s_current;
 
         public static Project Current
         {
@@ -46,13 +46,15 @@ namespace XMLDoc2Markdown.Project
                 schema.Add(string.Empty, s_xmlSchemaFileName);
                 XmlReader xr = XmlReader.Create(sr);
                 XDocument temp = XDocument.Load(xr);
-                temp.Validate(schema, (sender, args) =>
-                {
-                    if (args.Severity == XmlSeverityType.Error)
+                temp.Validate(
+                    schema,
+                    (sender, args) =>
                     {
-                        throw args.Exception;
-                    }
-                });
+                        if (args.Severity == XmlSeverityType.Error)
+                        {
+                            throw args.Exception;
+                        }
+                    });
                 XmlSerializer xs = new XmlSerializer(typeof(Project));
                 s_current = xs.Deserialize(sr) as Project;
                 Validate(s_current);
@@ -70,7 +72,7 @@ namespace XMLDoc2Markdown.Project
         {
             if (s_current is null)
             {
-                throw  new InvalidOperationException("No configuration loaded. Load a configuration first.");
+                throw new InvalidOperationException("No configuration loaded. Load a configuration first.");
             }
 
             lock (s_current)
@@ -88,6 +90,7 @@ namespace XMLDoc2Markdown.Project
             {
                 throw new InvalidOperationException("A configuration is already loaded. Unload the configuration first.");
             }
+
             s_current = new Project();
             return s_current;
         }
@@ -106,20 +109,23 @@ namespace XMLDoc2Markdown.Project
             {
                 throw new XmlSchemaValidationException("Namespace is an invalid regex and glob.");
             }
+
             if (project.Properties.Index is null || string.IsNullOrWhiteSpace(project.Properties.Index.Name))
             {
                 project.Properties.Index = new Index {Name = "index"};
             }
+
             if (string.IsNullOrWhiteSpace(project.Properties.Output.Path))
             {
                 throw new XmlSchemaValidationException("Output path is null or whitespace.");
             }
-            
+
             // Assembly
             if (project.Assembly.Length == 0)
             {
                 throw new XmlSchemaValidationException("No assemblies are defined in the project.");
             }
+
             for (int i = 0; i < project.Assembly.Length; i++)
             {
                 Assembly? assembly = project.Assembly[i];
@@ -127,6 +133,7 @@ namespace XMLDoc2Markdown.Project
                 {
                     throw new XmlSchemaValidationException("The assembly #{i} is not initialized correctly.");
                 }
+
                 if (!File.Exists(assembly.File))
                 {
                     throw new XmlSchemaValidationException($"Invalid filename for assembly #{i}. {assembly.File}");

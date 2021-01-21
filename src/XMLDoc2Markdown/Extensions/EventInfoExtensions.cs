@@ -24,16 +24,12 @@ namespace XMLDoc2Markdown.Extensions
             {
                 signature.Add(eventInfo.GetVisibility().Print());
 
-                if ((eventInfo.AddMethod?.IsStatic ?? false) ||
-                    (eventInfo.RaiseMethod?.IsStatic ?? false) ||
-                    (eventInfo.RemoveMethod?.IsStatic ?? false))
+                if ((eventInfo.AddMethod?.IsStatic ?? false) || (eventInfo.RaiseMethod?.IsStatic ?? false) || (eventInfo.RemoveMethod?.IsStatic ?? false))
                 {
                     signature.Add("static");
                 }
 
-                if ((eventInfo.AddMethod?.IsAbstract ?? false) ||
-                    (eventInfo.RaiseMethod?.IsAbstract ?? false) ||
-                    (eventInfo.RemoveMethod?.IsAbstract ?? false))
+                if ((eventInfo.AddMethod?.IsAbstract ?? false) || (eventInfo.RaiseMethod?.IsAbstract ?? false) || (eventInfo.RemoveMethod?.IsAbstract ?? false))
                 {
                     signature.Add("abstract");
                 }

@@ -42,6 +42,7 @@ namespace XMLDoc2Markdown
             {
                 typeNamespaceToPathMap.TryAdd(nspc, dir);
             }
+
             //foreach ((string[] key, char[] value) in this.NamespacesToDirectoryStructure(typeList.Select(t => t.Namespace!.Split("."))))
             //{
             //    typeNamespaceToPathMap.TryAdd(string.Join('.', key), new string(value));
@@ -54,15 +55,12 @@ namespace XMLDoc2Markdown
             }
         }
 
-        public void Add(string symbolIdentifer, string filePath, string fileNameWithoutExtension)
-        {
-            this._symbolProvider.Add(symbolIdentifer, new TypeSymbol(filePath, fileNameWithoutExtension));
-        }
+        public void Add(string symbolIdentifer, string filePath, string fileNameWithoutExtension) => this._symbolProvider.Add(symbolIdentifer, new TypeSymbol(filePath, fileNameWithoutExtension));
 
         public bool ContainsKey(string symbolIdentifier) => this._symbolProvider.ContainsKey(symbolIdentifier);
 
         public bool TryGetValue(string symbolIdentifier, [MaybeNullWhen(false)] out TypeSymbol value) => this._symbolProvider.TryGetValue(symbolIdentifier, out value);
-        
+
         public IEnumerator<KeyValuePair<string, TypeSymbol>> GetEnumerator() => this._symbolProvider.GetEnumerator();
 
         IEnumerator IEnumerable.GetEnumerator() => this.GetEnumerator();
@@ -98,14 +96,14 @@ namespace XMLDoc2Markdown
                             int charIndex = segments.Take(segment).Select(s => s.Length).Aggregate(0, (x, y) => x + y + 1) - 1;
                             path[charIndex] = '\\';
                             foreach (char[] value in typeNamespaceToPathMap
-                                                    .Where(kvp => kvp.Value.Length > charIndex && (ReferenceEquals(kvp.Key, segments) || sharedNamespacePortions.Contains(kvp.Key)))
-                                                    .Select(kvp => kvp.Value))
+                               .Where(kvp => kvp.Value.Length > charIndex && (ReferenceEquals(kvp.Key, segments) || sharedNamespacePortions.Contains(kvp.Key)))
+                               .Select(kvp => kvp.Value))
                             {
                                 value[charIndex] = '\\';
                             }
                         }
-
                     }
+
                     sharedNamespacePortions = sharedNamespacePortions.Where((x, i) => sharedNamespacePortionIndices.Contains(i)).ToList();
                     segment++;
                 } while (segment < segments.Length && sharedNamespacePortions.Count > 0);
@@ -117,24 +115,27 @@ namespace XMLDoc2Markdown
             return typeNamespaceToPathMap;
         }
 
-        ///<summary>Enumerates all indices in the collection where the segment is equal to the segment at the same position - specified by segment - in test.</summary>
+        /// <summary>
+        ///     Enumerates all indices in the collection where the segment is equal to the segment at the same position -
+        ///     specified by segment - in test.
+        /// </summary>
         private IEnumerable<int> IndexOfAll(IList<string[]> collection, string[] test, int segment)
-	    {
-		    for (int index = 0; index < collection.Count; index++)
-		    {
-			    if (collection[index].Length > segment && String.Equals(test[segment], collection[index][segment], StringComparison.Ordinal))
-			    {
-				    yield return index;
-			    }
-		    }
-	    }
+        {
+            for (int index = 0; index < collection.Count; index++)
+            {
+                if (collection[index].Length > segment && String.Equals(test[segment], collection[index][segment], StringComparison.Ordinal))
+                {
+                    yield return index;
+                }
+            }
+        }
 
-	    private class StringSequenceEqualityComparer : IEqualityComparer<string[]?>
-	    {
-		    public bool Equals(string[]? x, string[]? y) => !(x is null) && x.Length == y?.Length && x.SequenceEqual(y, StringComparer.Ordinal);
+        private class StringSequenceEqualityComparer : IEqualityComparer<string[]?>
+        {
+            public bool Equals(string[]? x, string[]? y) => !(x is null) && x.Length == y?.Length && x.SequenceEqual(y, StringComparer.Ordinal);
 
-		    public int GetHashCode(string[]? obj) => obj?.GetHashCode() ?? 0;
-	    }
+            public int GetHashCode(string[]? obj) => obj?.GetHashCode() ?? 0;
+        }
 
 #endregion
     }

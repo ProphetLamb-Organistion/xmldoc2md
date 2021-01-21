@@ -3,26 +3,22 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.CompilerServices;
-using System.Runtime.Loader;
-using System.Text;
-using System.Text.RegularExpressions;
 using System.Xml.Schema;
 
-using GlobExpressions;
-
-using Markdown;
 using Microsoft.Extensions.CommandLineUtils;
 
-using XMLDoc2Markdown.AssemblyHelpers;
 using XMLDoc2Markdown.Extensions;
+using XMLDoc2Markdown.Project;
+
+using Assembly = System.Reflection.Assembly;
+using Index = XMLDoc2Markdown.Project.Index;
 
 namespace XMLDoc2Markdown
 {
-    class Program
+    internal class Program
     {
         [STAThread]
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
 #if DEBUG
             Debugger.Launch();
@@ -33,6 +29,7 @@ namespace XMLDoc2Markdown
                 parent = new DirectoryInfo(solutionRoot).Parent;
                 solutionRoot = parent?.FullName;
             }
+
             if (solutionRoot is null)
             {
                 throw new Exception();
@@ -41,16 +38,13 @@ namespace XMLDoc2Markdown
             //args[0] = @"C:\Users\Public\source\repos\GroupedObservableCollection\src\bin\Debug\netstandard2.0\GroupedObservableCollection.dll"; //@"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
             //args[1] = Path.Combine(solutionRoot, @"docs\GOC");
 #endif
-            var app = new CommandLineApplication
-            {
-                Name = "xmldoc2md"
-            };
+            var app = new CommandLineApplication {Name = "xmldoc2md"};
 
             app.VersionOption("-v|--version", () => $"Version {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
             app.HelpOption("-?|-h|--help");
 
             CommandArgument outArg = app.Argument("out", "Output directory");
-            
+
             CommandArgument srcArg = app.Argument("src", "DLL source path");
 
             CommandOption projectOption = app.Option(
@@ -68,38 +62,39 @@ namespace XMLDoc2Markdown
                 "Name of the index page (default: \"index\")",
                 CommandOptionType.SingleValue);
 
-            app.OnExecute(() =>
-            {
-                string? @out = outArg.Value;
-                string? src = srcArg.Value;
-                string? namespaceMatch = namespaceMatchOption.Value();
-                string indexPageName = indexPageNameOption.HasValue() ? indexPageNameOption.Value() : "index";
-                string? projectFileName = projectOption.Value();
+            app.OnExecute(
+                () =>
+                {
+                    string? @out = outArg.Value;
+                    string? src = srcArg.Value;
+                    string? namespaceMatch = namespaceMatchOption.Value();
+                    string indexPageName = indexPageNameOption.HasValue() ? indexPageNameOption.Value() : "index";
+                    string? projectFileName = projectOption.Value();
 
-                if (projectOption.HasValue())
-                {
-                    return ConfigureFromProject(projectFileName!, @out);
-                }
-                else
-                {
+                    if (projectOption.HasValue())
+                    {
+                        return ConfigureFromProject(projectFileName!, @out);
+                    }
+
                     if (@out is null)
                     {
                         throw new CommandParsingException(app, "out is undefined.");
                     }
+
                     EnsureDirectory(@out);
 
                     if (src is null)
                     {
                         throw new CommandParsingException(app, "src is undefined.");
                     }
+
                     if (!File.Exists(src))
                     {
                         throw new FileNotFoundException("src was not found. " + src);
                     }
 
                     return ConfigureFromFile(src, @out, namespaceMatch, indexPageName);
-                }
-            });
+                });
 
             try
             {
@@ -118,27 +113,16 @@ namespace XMLDoc2Markdown
         private static int ConfigureFromFile(string src, string @out, string? namespaceMatch, string indexPageName)
         {
             string[] targets = src.GetGlobFiles().ToArray();
-            
-            // Generate project configuration
-            Project.Project project = Project.Configuration.Create();
 
-            project.Properties = new Project.Properties
-            {
-                Index = new Project.Index {Name = namespaceMatch},
-                NamespaceMatch = namespaceMatch,
-                Output = new Project.Output {Path = @out}
-            };
+            // Generate project configuration
+            Project.Project project = Configuration.Create();
+
+            project.Properties = new Properties {Index = new Index {Name = namespaceMatch}, NamespaceMatch = namespaceMatch, Output = new Output {Path = @out}};
 
             project.Assembly = new Project.Assembly[targets.Length];
             for (int i = 0; i < targets.Length; i++)
             {
-                project.Assembly[i] = new Project.Assembly
-                {
-                    Documentation = null,
-                    File = targets[i],
-                    IndexHeader = new Project.IndexHeader { File = null, Text = null },
-                    References = null
-                };
+                project.Assembly[i] = new Project.Assembly {Documentation = null, File = targets[i], IndexHeader = new IndexHeader {File = null, Text = null}, References = null};
             }
 
             DocumentationProcessor.WriteCurrentProjectConfiguration(@out);
@@ -156,7 +140,7 @@ namespace XMLDoc2Markdown
             // Prepare project configuration
             try
             {
-                Project.Configuration.Load(projectFileName);
+                Configuration.Load(projectFileName);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -168,7 +152,8 @@ namespace XMLDoc2Markdown
                 Console.WriteLine("The project could no be loaded correctly. " + ex.ToLog(true));
                 return -1;
             }
-            if (!Project.Configuration.IsLoaded)
+
+            if (!Configuration.IsLoaded)
             {
                 Console.WriteLine("The project could no be loaded correctly.");
                 return -1;

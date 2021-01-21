@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Text;
 
 namespace XMLDoc2Markdown.Utility
 {
@@ -14,21 +13,24 @@ namespace XMLDoc2Markdown.Utility
             {
                 throw new ArgumentNullException(nameof(collection));
             }
+
             if (index < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(index));
             }
+
             if (length < 0)
             {
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
+
             if (collection.Count < index + length)
             {
                 throw new ArgumentOutOfRangeException(nameof(length));
             }
 
             int lo = index;
-            int hi = index + length - 1;
+            int hi = (index + length) - 1;
 
             while (lo <= hi)
             {
@@ -51,10 +53,13 @@ namespace XMLDoc2Markdown.Utility
 
             return ~lo;
         }
-        public static int BinarySearch<T>(this IReadOnlyList<T> collection, int index, int length, T value) where T : IComparable<T> => BinarySearch(collection, index, length, value, Comparer<T>.Default);
-        
+
+        public static int BinarySearch<T>(this IReadOnlyList<T> collection, int index, int length, T value)
+            where T : IComparable<T> => BinarySearch(collection, index, length, value, Comparer<T>.Default);
+
         public static int BinarySearch<T>(this IReadOnlyList<T> collection, T value, IComparer<T> comparer) => BinarySearch(collection, 0, collection.Count, value, comparer);
 
-        public static int BinarySearch<T>(this IReadOnlyList<T> collection, T value) where T : IComparable<T> => BinarySearch(collection, 0, collection.Count, value, Comparer<T>.Default);
+        public static int BinarySearch<T>(this IReadOnlyList<T> collection, T value)
+            where T : IComparable<T> => BinarySearch(collection, 0, collection.Count, value, Comparer<T>.Default);
     }
 }

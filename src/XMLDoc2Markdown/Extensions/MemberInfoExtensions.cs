@@ -5,9 +5,8 @@ namespace XMLDoc2Markdown.Extensions
 {
     internal static class MemberInfoExtensions
     {
-        internal static string GetSignature(this MemberInfo memberInfo, bool full = false)
-        {
-            return memberInfo switch
+        internal static string GetSignature(this MemberInfo memberInfo, bool full = false) =>
+            memberInfo switch
             {
                 Type type => type.ToSymbol().GetSignature(full),
                 MethodBase methodBase => methodBase.GetSignature(full),
@@ -15,6 +14,5 @@ namespace XMLDoc2Markdown.Extensions
                 EventInfo eventInfo => eventInfo.GetSignature(full),
                 _ => throw new NotSupportedException()
             };
-        }
     }
 }

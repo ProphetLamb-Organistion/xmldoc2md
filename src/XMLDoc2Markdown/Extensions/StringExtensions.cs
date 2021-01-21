@@ -13,20 +13,16 @@ namespace XMLDoc2Markdown.Extensions
     {
         private static readonly string[] s_formatChevrons_oldValues = {"<", ">"};
         private static readonly string[] s_formatChevrons_newValues = {"&lt;", "&gt;"};
-        public static string FormatChevrons(this string value)
-        {
-            return value.ReplaceMany(s_formatChevrons_oldValues, s_formatChevrons_newValues);
-        }
 
         private static readonly string[] s_typeNameToFileName_oldValues = {"<", ">", ",", " ", "`"};
         private static readonly string[] s_typeNameToFileName_newValues = {"{", "}", "", "-", "-"};
-        public static string MakeTypeNameFileNameSafe(string typeName)
-        {
-            return typeName.ReplaceMany(s_typeNameToFileName_oldValues, s_typeNameToFileName_newValues);
-        }
 
         private static readonly char[] s_globWildcards = {'*', '?', '['};
         private static readonly char[] s_pathSeparators = {'\\', '/'};
+
+        public static string FormatChevrons(this string value) => value.ReplaceMany(s_formatChevrons_oldValues, s_formatChevrons_newValues);
+
+        public static string MakeTypeNameFileNameSafe(string typeName) => typeName.ReplaceMany(s_typeNameToFileName_oldValues, s_typeNameToFileName_newValues);
 
         public static bool IsValidRegex(this string self)
         {
@@ -43,6 +39,7 @@ namespace XMLDoc2Markdown.Extensions
             {
                 return false;
             }
+
             return true;
         }
 
@@ -70,12 +67,13 @@ namespace XMLDoc2Markdown.Extensions
             {
                 return false;
             }
+
             return true;
         }
 
 
         /// <summary>
-        /// Returns all files that fulfill the glob pattern.
+        ///     Returns all files that fulfill the glob pattern.
         /// </summary>
         /// <param name="globFilePath">The glob file pattern.</param>
         /// <returns>A enumerable sequence of all files that fulfill the glob pattern.</returns>
@@ -92,6 +90,7 @@ namespace XMLDoc2Markdown.Extensions
                 var fi = new FileInfo(globFilePath);
                 return fi.Exists ? new[] {fi.FullName} : Enumerable.Empty<string>();
             }
+
             // Split the glob as close to wildcard as possible
             string[] pathPortions = globFilePath.Split(s_pathSeparators, StringSplitOptions.RemoveEmptyEntries);
             int portionBreakIndex = pathPortions.TakeWhile(portion => portion.IndexOfAny(s_globWildcards) == -1).Count();

@@ -15,10 +15,7 @@ namespace XMLDoc2Markdown.Extensions
             return getMethodeVisibility.CompareTo(setMethodeVisibility) >= 0 ? getMethodeVisibility : setMethodeVisibility;
         }
 
-        internal static Type? GetReturnType(this PropertyInfo propertyInfo)
-        {
-            return propertyInfo.GetMethod?.ReturnType ?? propertyInfo.SetMethod?.GetParameters()?.FirstOrDefault()?.ParameterType;
-        }
+        internal static Type? GetReturnType(this PropertyInfo propertyInfo) => propertyInfo.GetMethod?.ReturnType ?? propertyInfo.SetMethod?.GetParameters()?.FirstOrDefault()?.ParameterType;
 
         internal static string GetSignature(this PropertyInfo propertyInfo, bool full = false)
         {
@@ -28,14 +25,12 @@ namespace XMLDoc2Markdown.Extensions
             {
                 signature.Add(propertyInfo.GetVisibility().Print());
 
-                if (propertyInfo.GetMethod != null && propertyInfo.GetMethod.IsStatic ||
-                    propertyInfo.SetMethod != null && propertyInfo.SetMethod.IsStatic)
+                if ((propertyInfo.GetMethod != null && propertyInfo.GetMethod.IsStatic) || (propertyInfo.SetMethod != null && propertyInfo.SetMethod.IsStatic))
                 {
                     signature.Add("static");
                 }
 
-                if (propertyInfo.GetMethod != null && propertyInfo.GetMethod.IsAbstract ||
-                    propertyInfo.SetMethod != null && propertyInfo.SetMethod.IsAbstract)
+                if ((propertyInfo.GetMethod != null && propertyInfo.GetMethod.IsAbstract) || (propertyInfo.SetMethod != null && propertyInfo.SetMethod.IsAbstract))
                 {
                     signature.Add("abstract");
                 }

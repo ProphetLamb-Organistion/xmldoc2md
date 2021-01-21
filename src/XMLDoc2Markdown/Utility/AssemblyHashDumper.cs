@@ -1,14 +1,10 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection.Metadata;
 using System.Reflection.PortableExecutable;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 
 using XMLDoc2Markdown.Extensions;
 
@@ -21,7 +17,8 @@ namespace XMLDoc2Markdown.Utility
             foreach (string fullFileName in assemblyFileNames.Distinct(FileNameEqualityComparer.Instance))
             {
                 string? name = null;
-                try {
+                try
+                {
                     using FileStream sr = File.OpenRead(fullFileName);
                     PEReader reader = new PEReader(sr);
                     MetadataReader metadataReader = reader.GetMetadataReader();
@@ -32,6 +29,7 @@ namespace XMLDoc2Markdown.Utility
                 {
                     exceptionHandle($"Could not read metadata of assembly '{fullFileName}'. " + ex.ToLog());
                 }
+
                 if (name != null)
                 {
                     yield return AssemblyNameHashFunction(name);
@@ -48,9 +46,10 @@ namespace XMLDoc2Markdown.Utility
             long pPow = 1;
             foreach (char t in assemblyName)
             {
-                hashValue = (hashValue + (t - a + 1) * pPow) % m;
+                hashValue = (hashValue + (((t - a) + 1) * pPow)) % m;
                 pPow = (pPow * p) % m;
             }
+
             return (int)hashValue;
         }
 
@@ -59,15 +58,9 @@ namespace XMLDoc2Markdown.Utility
             private static readonly Lazy<FileNameEqualityComparer> s_instance = new Lazy<FileNameEqualityComparer>(() => new FileNameEqualityComparer());
             public static FileNameEqualityComparer Instance => s_instance.Value;
 
-            public bool Equals(string x, string y)
-            {
-                return Path.GetFileNameWithoutExtension(x).Equals(Path.GetFileNameWithoutExtension(y), StringComparison.Ordinal);
-            }
+            public bool Equals(string x, string y) => Path.GetFileNameWithoutExtension(x).Equals(Path.GetFileNameWithoutExtension(y), StringComparison.Ordinal);
 
-            public int GetHashCode([DisallowNull] string obj)
-            {
-                return Path.GetFileNameWithoutExtension(obj).GetHashCode();
-            }
+            public int GetHashCode([DisallowNull] string obj) => Path.GetFileNameWithoutExtension(obj).GetHashCode();
         }
     }
 }

@@ -2,6 +2,7 @@
  * All mechanisms related to Assembly loading & unloading are implemented by Jan Vorlicek, on Github https://github.com/dotnet/samples/tree/master/core/tutorials/Unloading
  * and are licensed under the CC BY 4.0 https://github.com/dotnet/samples/blob/master/LICENSE license.
  */
+
 using System;
 using System.Reflection;
 using System.Runtime.Loader;
@@ -16,10 +17,8 @@ namespace XMLDoc2Markdown.AssemblyHelpers
         // main plugin assembly.
         protected AssemblyDependencyResolver _resolver;
 
-        public HostAssemblyLoadContext(string pluginPath) : base(isCollectible: true)
-        {
-            _resolver = new AssemblyDependencyResolver(pluginPath);
-        }
+        public HostAssemblyLoadContext(string pluginPath)
+            : base(true) => this._resolver = new AssemblyDependencyResolver(pluginPath);
 
         // The Load method override causes all the dependencies present in the plugin's binary directory to get loaded
         // into the HostAssemblyLoadContext together with the plugin assembly itself.
@@ -28,7 +27,7 @@ namespace XMLDoc2Markdown.AssemblyHelpers
         // The types present on the host and plugin side would then not match even though they would have the same names.
         protected override Assembly Load(AssemblyName name)
         {
-            string? assemblyPath = _resolver.ResolveAssemblyToPath(name);
+            string? assemblyPath = this._resolver.ResolveAssemblyToPath(name);
             if (assemblyPath != null)
             {
                 return this.LoadFromAssemblyPath(assemblyPath);

@@ -5,7 +5,7 @@
 
         <!--Optional; index.md; The name of the index file.-->
         <Index Name="name_of_index.md" />
-        
+
         <!--Optional;; The regex used to determine which namespaces to include in the documentation. If empty all will be included.-->
         <NamespaceMatch>.</NamespaceMatch>
     </Properties>
@@ -30,8 +30,9 @@
         </References>
 
         <!--Optional;; Raw markdown code, that will be inculded on top of the index file, below the assembly name.-->
-        <IndexHeader># Documentation
-Must be escaped: Foo&lt;T&gt;
+        <IndexHeader>
+            # Documentation
+            Must be escaped: Foo&lt;T&gt;
         </IndexHeader>
     </Assembly>
 

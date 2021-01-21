@@ -8,10 +8,7 @@ namespace XMLDoc2Markdown.Extensions
 {
     internal static class AssemblyExtensions
     {
-        internal static IEnumerable<string?> GetDeclaredNamespaces(this Assembly assembly)
-        {
-            return assembly.GetTypes().Select(type => type.Namespace).Distinct();
-        }
+        internal static IEnumerable<string?> GetDeclaredNamespaces(this Assembly assembly) => assembly.GetTypes().Select(type => type.Namespace).Distinct();
 
         public static bool IsSystemAssembly(this Assembly assembly)
         {

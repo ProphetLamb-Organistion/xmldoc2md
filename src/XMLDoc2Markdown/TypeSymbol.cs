@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -13,7 +12,7 @@ using XMLDoc2Markdown.Extensions;
 
 namespace XMLDoc2Markdown
 {
-    [DebuggerDisplay("{" + nameof(TypeSymbol.SymbolType) + "}")]
+    [DebuggerDisplay("{" + nameof(SymbolType) + "}")]
     internal class TypeSymbol
     {
 #region Fields
@@ -26,26 +25,26 @@ namespace XMLDoc2Markdown
         internal static readonly IReadOnlyDictionary<Type, string> PrimitiveTypeNames = new Dictionary<Type, string>
         {
             // void
-            { typeof(void), "void" },
+            {typeof(void), "void"},
             // object
-            { typeof(object), "object" },
+            {typeof(object), "object"},
             // bool
-            { typeof(bool), "bool" },
+            {typeof(bool), "bool"},
             // numeric
-            { typeof(sbyte), "sbyte" },
-            { typeof(byte), "byte" },
-            { typeof(short), "short" },
-            { typeof(ushort), "ushort" },
-            { typeof(int), "int" },
-            { typeof(uint), "uint" },
-            { typeof(long), "long" },
-            { typeof(ulong), "ulong" },
-            { typeof(float), "float" },
-            { typeof(double), "double" },
-            { typeof(decimal), "decimal" },
+            {typeof(sbyte), "sbyte"},
+            {typeof(byte), "byte"},
+            {typeof(short), "short"},
+            {typeof(ushort), "ushort"},
+            {typeof(int), "int"},
+            {typeof(uint), "uint"},
+            {typeof(long), "long"},
+            {typeof(ulong), "ulong"},
+            {typeof(float), "float"},
+            {typeof(double), "double"},
+            {typeof(decimal), "decimal"},
             // text
-            { typeof(char), "char" },
-            { typeof(string), "string" },
+            {typeof(char), "char"},
+            {typeof(string), "string"}
         };
 
         private const string s_virtualDeviceRoot = "A:\\";
@@ -99,11 +98,12 @@ namespace XMLDoc2Markdown
                 {
                     throw new InvalidOperationException("SymbolType is null.");
                 }
+
                 return this.SymbolType.IsVisible
-                    ? Visibility.Public 
+                    ? Visibility.Public
                     : this.SymbolType.IsNestedPrivate || this.SymbolTypeInfo.IsNotPublic
-                    ? Visibility.Private
-                    : Visibility.None;
+                        ? Visibility.Private
+                        : Visibility.None;
             }
         }
 
@@ -187,21 +187,22 @@ namespace XMLDoc2Markdown
                         {
                             genericTypeSpecifiers.RemoveAll(x => String.Equals(x.Name, p.Name, StringComparison.Ordinal));
                         }
+
                         parentInfo = parentInfo.DeclaringType?.GetTypeInfo();
                     }
-                
+
                     // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
                     if (this.SymbolTypeInfo.GenericTypeParameters.Length + this.SymbolTypeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
                     {
                         sb.Append(this.SymbolTypeInfo.DeclaringType?.ToSymbol().DisplayName)
-                          .Append(".");
+                           .Append(".");
                     }
                 }
-                
+
                 // Get the base name of the this.SymbolType.
                 int gravisIndex = this.SymbolType.Name.IndexOf('`'); // Indicates beginning of the generic type parameter portion of the name.
                 sb.Append(gravisIndex == -1 ? this.SymbolType.Name : this.SymbolType.Name.Substring(0, gravisIndex));
-                
+
                 if (genericTypeSpecifiers.Count != 0)
                 {
                     sb.Append('<');
@@ -224,6 +225,7 @@ namespace XMLDoc2Markdown
             {
                 throw new InvalidOperationException("SymbolType is null.");
             }
+
             var signature = new List<string>();
 
             if (full)
@@ -301,6 +303,7 @@ namespace XMLDoc2Markdown
             {
                 throw new InvalidOperationException("SymbolType is null.");
             }
+
             for (Type? current = this.SymbolType; current != null; current = current.BaseType)
             {
                 yield return current.ToSymbol();
@@ -313,6 +316,7 @@ namespace XMLDoc2Markdown
             {
                 throw new InvalidOperationException("SymbolType is null.");
             }
+
             if (!this.SymbolType.Assembly.IsSystemAssembly())
             {
                 throw new InvalidOperationException($"{this.SymbolType.FullName} is not a system assembly.");
@@ -321,11 +325,11 @@ namespace XMLDoc2Markdown
             return (this.SymbolType.FullName is null, this.SymbolType.Namespace is null) switch
             {
                 (true, true) => // Navigate to search specifying that we are looking for API
-                    $"{msDocsBaseUrl}search/?terms=api%20{this.SymbolType.Name}&category=Reference&scope=.NET",
+                $"{msDocsBaseUrl}search/?terms=api%20{this.SymbolType.Name}&category=Reference&scope=.NET",
                 (true, false) => // Try to reconstruct from namespace, not guaranteed to hit.
-                    $"{msDocsBaseUrl}dotnet/api/{this.SymbolType.Namespace!.ToLower().Replace('`', '-')}.{this.SymbolType.Name.ToLower().Replace('`', '-')}",
+                $"{msDocsBaseUrl}dotnet/api/{this.SymbolType.Namespace!.ToLower().Replace('`', '-')}.{this.SymbolType.Name.ToLower().Replace('`', '-')}",
                 _ => // Navigate to documentation
-                    $"{msDocsBaseUrl}dotnet/api/{this.SymbolType.FullName!.ToLower().Replace('`', '-')}"
+                $"{msDocsBaseUrl}dotnet/api/{this.SymbolType.FullName!.ToLower().Replace('`', '-')}"
             };
         }
 
@@ -349,13 +353,12 @@ namespace XMLDoc2Markdown
         public MarkdownLink GetDocsLink(TypeSymbol? relativeTo = null)
         {
             string url = this.SymbolType.Assembly.IsSystemAssembly()
-                            ? this.MsDocsUrl()
-                            : this.GetInternalDocsUrl(relativeTo);
+                ? this.MsDocsUrl()
+                : this.GetInternalDocsUrl(relativeTo);
 
             return new MarkdownLink(this.DisplayName.FormatChevrons(), url);
         }
 
 #endregion
-
     }
 }

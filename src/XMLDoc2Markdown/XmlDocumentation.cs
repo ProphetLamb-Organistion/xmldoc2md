@@ -11,9 +11,6 @@ namespace XMLDoc2Markdown
 {
     public class XmlDocumentation
     {
-        public string AssemblyName { get; }
-        public IEnumerable<XElement> Members { get; }
-
         public XmlDocumentation(string dllPath)
         {
             string xmlPath = Path.Combine(Directory.GetParent(dllPath).FullName, Path.GetFileNameWithoutExtension(dllPath) + ".xml");
@@ -36,12 +33,15 @@ namespace XMLDoc2Markdown
             }
         }
 
+        public string AssemblyName { get; }
+        public IEnumerable<XElement> Members { get; }
+
         public XElement? GetMember(MemberInfo memberInfo)
         {
             string fullName;
             if (memberInfo is Type type)
             {
-                fullName = type.FullName ?? (type.Namespace + "." + type.Name);
+                fullName = type.FullName ?? type.Namespace + "." + type.Name;
             }
             else
             {
@@ -49,13 +49,16 @@ namespace XMLDoc2Markdown
                 string name = memberInfo is ConstructorInfo ? "#ctor" : memberInfo.Name;
                 fullName = $"{declaringType.Namespace}.{declaringType.Name}.{name}";
             }
+
             if (memberInfo is MethodBase methodBase)
             {
-                Type[] genericArguments = methodBase switch {
-                    ConstructorInfo _ => methodBase.DeclaringType?.GetGenericArguments(),
-                    MethodInfo _ => methodBase.GetGenericArguments(),
-                    _ => null
-                } ?? Array.Empty<Type>();
+                Type[] genericArguments = methodBase switch
+                    {
+                        ConstructorInfo _ => methodBase.DeclaringType?.GetGenericArguments(),
+                        MethodInfo _ => methodBase.GetGenericArguments(),
+                        _ => null
+                    }
+                 ?? Array.Empty<Type>();
 
                 if (methodBase is MethodInfo && methodBase.IsGenericMethod)
                 {
@@ -65,11 +68,12 @@ namespace XMLDoc2Markdown
                 ParameterInfo[] parameterInfos = methodBase.GetParameters();
                 if (parameterInfos.Length > 0)
                 {
-                    IEnumerable<string> @params = parameterInfos.Select(p =>
-                    {
-                        int index = Array.IndexOf(genericArguments, p.ParameterType);
-                        return index > -1 ? $"{(methodBase is MethodInfo ? "``" : "`")}{index}" : p.ParameterType.ToString();
-                    });
+                    IEnumerable<string> @params = parameterInfos.Select(
+                        p =>
+                        {
+                            int index = Array.IndexOf(genericArguments, p.ParameterType);
+                            return index > -1 ? $"{(methodBase is MethodInfo ? "``" : "`")}{index}" : p.ParameterType.ToString();
+                        });
                     fullName = string.Concat(fullName, $"({string.Join(',', @params)})");
                 }
             }
@@ -77,9 +81,6 @@ namespace XMLDoc2Markdown
             return this.GetMember($"{memberInfo.MemberType.GetAlias()}:{fullName}");
         }
 
-        public XElement? GetMember(string name)
-        {
-            return this.Members.FirstOrDefault(member => member.Attribute("name")?.Value == name);
-        }
+        public XElement? GetMember(string name) => this.Members.FirstOrDefault(member => member.Attribute("name")?.Value == name);
     }
 }
