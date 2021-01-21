@@ -1,7 +1,7 @@
-using System;
+﻿using System;
 using System.Reflection;
 
-namespace XMLDoc2Markdown
+namespace XMLDoc2Markdown.Extensions
 {
     internal static class MemberTypesExtensions
     {

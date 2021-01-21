@@ -5,6 +5,8 @@ using System.Linq;
 using System.Reflection;
 using System.Xml.Linq;
 
+using XMLDoc2Markdown.Extensions;
+
 namespace XMLDoc2Markdown
 {
     public class XmlDocumentation

@@ -7,6 +7,8 @@ using System.Xml.Linq;
 using Dawn;
 using Markdown;
 
+using XMLDoc2Markdown.Extensions;
+
 namespace XMLDoc2Markdown
 {
     internal class TypeDocumentation

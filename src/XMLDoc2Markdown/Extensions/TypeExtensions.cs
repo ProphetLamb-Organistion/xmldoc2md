@@ -1,15 +1,12 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 
 using Markdown;
 
-namespace XMLDoc2Markdown
+namespace XMLDoc2Markdown.Extensions
 {
     internal static class TypeExtensions
     {
@@ -185,7 +182,7 @@ namespace XMLDoc2Markdown
         {
             if (type == null)
             {
-                throw new ArgumentNullException("Type cannot be null.");
+                throw new ArgumentNullException(nameof(type), "Type cannot be null.");
             }
             if (type.Assembly != typeof(string).Assembly)
             {
@@ -208,7 +205,7 @@ namespace XMLDoc2Markdown
         {
             if (type == null)
             {
-                throw new ArgumentNullException("Type cannot be null.");
+                throw new ArgumentNullException(nameof(type), "Type cannot be null.");
             }
 
             return $"{rootUrl}/{type.Namespace}/{type.Name.Replace('`', '-')}.md";

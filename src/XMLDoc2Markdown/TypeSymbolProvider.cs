@@ -2,11 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
-using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices;
-using System.Text;
-using System.Text.RegularExpressions;
+
+using XMLDoc2Markdown.Extensions;
+using XMLDoc2Markdown.Utility;
 
 namespace XMLDoc2Markdown
 {
@@ -39,10 +38,14 @@ namespace XMLDoc2Markdown
             IList<Type> typeList = types.ToList();
             IDictionary<string, string> typeNamespaceToPathMap = new Dictionary<string, string>();
             // Namespace directory structure
-            foreach ((string[] key, char[] value) in this.NamespacesToDirectoryStructure(typeList.Select(t => t.Namespace!.Split("."))))
+            foreach ((string nspc, string dir) in new NamespaceDirectoryTree(typeList.Where(t => t.Namespace != null).Select(t => t.Namespace!)))
             {
-                typeNamespaceToPathMap.TryAdd(string.Join('.', key), new string(value));
+                typeNamespaceToPathMap.TryAdd(nspc, dir);
             }
+            //foreach ((string[] key, char[] value) in this.NamespacesToDirectoryStructure(typeList.Select(t => t.Namespace!.Split("."))))
+            //{
+            //    typeNamespaceToPathMap.TryAdd(string.Join('.', key), new string(value));
+            //}
             // TypeSymbols
             foreach (KeyValuePair<string, TypeSymbol> keyValuePair in typeList
                .Select(x => KeyValuePair.Create(x.GetTypeSymbolIdentifier(), new TypeSymbol(x, typeNamespaceToPathMap[x.Namespace!], StringExtensions.MakeTypeNameFileNameSafe(x.Name)))))
@@ -66,7 +69,6 @@ namespace XMLDoc2Markdown
 
 #endregion
 
-
 #region Private members
 
         private IDictionary<string[], char[]> NamespacesToDirectoryStructure(IEnumerable<string[]> namespaces)
@@ -74,8 +76,8 @@ namespace XMLDoc2Markdown
             IDictionary<string[], char[]> typeNamespaceToPathMap = new Dictionary<string[], char[]>();
             IList<string[]> processedTypeNamespaces = new List<string[]>();
             foreach (string[] segments in namespaces
-                                          .Distinct(new StringSequenceEqualityComparer())
-                                         .OrderBy(n => n.Length))
+               .Distinct(new StringSequenceEqualityComparer())
+               .OrderBy(n => n.Length))
             {
                 int segment = 0;
                 char[] path = string.Join('.', segments).ToCharArray();

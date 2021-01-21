@@ -10,6 +10,8 @@ using System.Text.RegularExpressions;
 using Markdown;
 using Microsoft.Extensions.CommandLineUtils;
 
+using XMLDoc2Markdown.Extensions;
+
 namespace XMLDoc2Markdown
 {
     class Program
@@ -98,7 +100,7 @@ namespace XMLDoc2Markdown
                 }
                 catch (Exception ex)
                 {
-                    Console.WriteLine("Unable to process the assembly at {0}.\r\n An error occured in {1}\r\nMessage: {2}\r\n{3}\r\n{4}", sourceFiles[0], ex.Source, ex.Message, ex.TargetSite, ex.StackTrace);
+                    Console.WriteLine($"Unable to process the assembly at {sourceFiles[0]}. " + ex.ToLog());
                     return -1;
                 }
                 return 0;
@@ -114,7 +116,7 @@ namespace XMLDoc2Markdown
             }
             catch (Exception ex)
             {
-                Console.WriteLine("Unable to execute application.\r\n An error occured in {0}\r\nMessage: {1}\r\n{2}\r\n{3}", ex.Source, ex.Message, ex.TargetSite, ex.StackTrace);
+                Console.WriteLine("Unable to execute application." + ex.ToLog());
             }
         }
 

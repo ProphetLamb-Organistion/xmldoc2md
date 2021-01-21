@@ -25,6 +25,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Include="Project\Template.x2mproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Glob" Version="1.1.8" />
     <PackageReference Include="MarkdownBuilder" Version="0.2.0" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />

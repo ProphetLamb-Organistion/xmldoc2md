@@ -1,12 +1,9 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Reflection;
+﻿using System;
 using System.Text;
 
 using Markdown;
 
-namespace XMLDoc2Markdown
+namespace XMLDoc2Markdown.Extensions
 {
     internal static class MarkdownDocumentExtensions
     {
