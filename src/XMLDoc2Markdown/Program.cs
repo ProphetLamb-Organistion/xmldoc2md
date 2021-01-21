@@ -4,18 +4,24 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.CompilerServices;
+using System.Runtime.Loader;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Xml.Schema;
+
+using GlobExpressions;
 
 using Markdown;
 using Microsoft.Extensions.CommandLineUtils;
 
+using XMLDoc2Markdown.AssemblyHelpers;
 using XMLDoc2Markdown.Extensions;
 
 namespace XMLDoc2Markdown
 {
     class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
 #if DEBUG
@@ -31,9 +37,9 @@ namespace XMLDoc2Markdown
             {
                 throw new Exception();
             }
-            args = new[] { Path.Combine(solutionRoot, @"publish\MyClassLib.dll"), Path.Combine(solutionRoot, @"docs\sample") };
-            args[0] = @"C:\Users\Public\source\repos\GroupedObservableCollection\src\bin\Debug\netstandard2.0\GroupedObservableCollection.dll"; //@"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
-            args[1] = Path.Combine(solutionRoot, @"docs\GOC");
+            //args = new[] { Path.Combine(solutionRoot, @"publish\MyClassLib.dll"), Path.Combine(solutionRoot, @"docs\sample") };
+            //args[0] = @"C:\Users\Public\source\repos\GroupedObservableCollection\src\bin\Debug\netstandard2.0\GroupedObservableCollection.dll"; //@"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
+            //args[1] = Path.Combine(solutionRoot, @"docs\GOC");
 #endif
             var app = new CommandLineApplication
             {
@@ -43,12 +49,18 @@ namespace XMLDoc2Markdown
             app.VersionOption("-v|--version", () => $"Version {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
             app.HelpOption("-?|-h|--help");
 
-            CommandArgument srcArg = app.Argument("src", "DLL source path");
             CommandArgument outArg = app.Argument("out", "Output directory");
+            
+            CommandArgument srcArg = app.Argument("src", "DLL source path");
+
+            CommandOption projectOption = app.Option(
+                "-p <regex>|--project <regex>",
+                "Filename of the project to generate",
+                CommandOptionType.SingleValue);
 
             CommandOption namespaceMatchOption = app.Option(
-                "--namespace-match <regex>",
-                "Regex pattern to select namespaces",
+                "-r--namespace-match <regex>",
+                "Glob or regex pattern to select namespaces",
                 CommandOptionType.SingleValue);
 
             CommandOption indexPageNameOption = app.Option(
@@ -58,52 +70,35 @@ namespace XMLDoc2Markdown
 
             app.OnExecute(() =>
             {
-                string src = srcArg.Value;
-                string @out = outArg.Value;
+                string? @out = outArg.Value;
+                string? src = srcArg.Value;
                 string? namespaceMatch = namespaceMatchOption.Value();
                 string indexPageName = indexPageNameOption.HasValue() ? indexPageNameOption.Value() : "index";
+                string? projectFileName = projectOption.Value();
 
-                if (string.IsNullOrWhiteSpace(namespaceMatch))
+                if (projectOption.HasValue())
                 {
-                    namespaceMatch = null;
+                    return ConfigureFromProject(projectFileName!, @out);
                 }
-                else if (!namespaceMatch.IsValidRegex())
+                else
                 {
-                    throw new ArgumentException("The RegEx pattern namespace-match is invalid.");
-                }
-
-                string[] sourceFiles = src.GetGlobFiles().ToArray();
-                if (sourceFiles.Length > 1)
-                {
-                    string executableFileName = DetermineCurrentProcessFullFilePath();
-                    foreach (string sourceFile in sourceFiles)
+                    if (@out is null)
                     {
-                        StringBuilder arguments = new StringBuilder();
-                        arguments.Append(sourceFile).Append(" ").Append(@out);
-                        if (!(namespaceMatch is null))
-                        {
-                            arguments.Append(" --namespace-match ").Append(namespaceMatch);
-                        }
-                        arguments.Append(" --index-page-name ").Append(indexPageName);
-                        Process.Start(executableFileName, arguments.ToString());
+                        throw new CommandParsingException(app, "out is undefined.");
                     }
-                    
+                    EnsureDirectory(@out);
+
+                    if (src is null)
+                    {
+                        throw new CommandParsingException(app, "src is undefined.");
+                    }
+                    if (!File.Exists(src))
+                    {
+                        throw new FileNotFoundException("src was not found. " + src);
+                    }
+
+                    return ConfigureFromFile(src, @out, namespaceMatch, indexPageName);
                 }
-                if (sourceFiles.Length == 0)
-                {
-                    Console.WriteLine("No files found that match the glob pattern provided.");
-                    return 1;
-                }
-                try
-                {
-                    ProcessAssembly(Assembly.LoadFrom(sourceFiles[0]), new XmlDocumentation(sourceFiles[0]), @out, namespaceMatch, indexPageName);
-                }
-                catch (Exception ex)
-                {
-                    Console.WriteLine($"Unable to process the assembly at {sourceFiles[0]}. " + ex.ToLog());
-                    return -1;
-                }
-                return 0;
             });
 
             try
@@ -120,94 +115,67 @@ namespace XMLDoc2Markdown
             }
         }
 
-        private static Type[] LoadAssemblyTypes(Assembly assembly)
+        private static int ConfigureFromFile(string src, string @out, string? namespaceMatch, string indexPageName)
         {
-            Type[] assemblyTypes;
+            string[] targets = src.GetGlobFiles().ToArray();
+            
+            // Generate project configuration
+            Project.Project project = Project.Configuration.Create();
 
+            project.Properties = new Project.Properties
+            {
+                Index = new Project.Index {Name = namespaceMatch},
+                NamespaceMatch = namespaceMatch,
+                Output = new Project.Output {Path = @out}
+            };
+
+            project.Assembly = new Project.Assembly[targets.Length];
+            for (int i = 0; i < targets.Length; i++)
+            {
+                project.Assembly[i] = new Project.Assembly
+                {
+                    Documentation = null,
+                    File = targets[i],
+                    IndexHeader = new Project.IndexHeader { File = null, Text = null },
+                    References = null
+                };
+            }
+
+            DocumentationProcessor.WriteCurrentProjectConfiguration(@out);
+            return 0;
+        }
+
+        private static int ConfigureFromProject(string projectFileName, string @out)
+        {
+            if (!File.Exists(projectFileName))
+            {
+                Console.WriteLine("The specified project file could not be found. " + projectFileName);
+                return -2;
+            }
+
+            // Prepare project configuration
             try
             {
-                assemblyTypes = assembly.GetTypes();
+                Project.Configuration.Load(projectFileName);
             }
-            catch (ReflectionTypeLoadException ex)
+            catch (UnauthorizedAccessException ex)
             {
-                StringBuilder sb = new StringBuilder(1000);
-                sb.AppendLine("ReflectionTypeLoadException: Occurs when dynamically linked assemblies cannot be loaded, they have to be imported manually. For more info see: https://natemcmaster.com/blog/2017/12/21/netcore-primitives/#depsjson and https://docs.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing");
-                if (!(ex.LoaderExceptions is null))
-                {
-                    sb.AppendLine($"\r\n\r\n LoaderExceptions: FileNotFoundExceptions: {ex.LoaderExceptions.Count(x => x is FileNotFoundException)} -----");
-                    foreach (FileNotFoundException subEx in ex.LoaderExceptions.Where(x => x is FileNotFoundException).Cast<FileNotFoundException>())
-                    {
-                        string log = subEx.FusionLog ?? subEx.Message;
-                        if (!String.IsNullOrWhiteSpace(log))
-                        {
-                            Console.WriteLine(log);
-                        }
-                    }
-                    sb.AppendLine($"\r\n\r\n LoaderExceptions: other Exceptions: {ex.LoaderExceptions.Count(x => !(x is FileNotFoundException))} -----");
-                    foreach (Exception? subEx in ex.LoaderExceptions.Where(x => !(x is FileNotFoundException)))
-                    {
-                        if (subEx != null)
-                        {
-                            sb.AppendLine(subEx.Message);
-                        }
-                    }
-                }
-                Console.WriteLine(sb);
-                throw;
+                Console.WriteLine("The project file count not be accessed. " + ex.ToLog(true));
+                return -1;
             }
-
-            return assemblyTypes;
-        }
-
-        private static MarkdownList ProcessAssemblyNamespace(IGrouping<string, TypeSymbol> typeNamespaceGrouping, string outputPath, XmlDocumentation documentation, Assembly assembly)
-        {
-            var list = new MarkdownList();
-            foreach (TypeSymbol symbol in typeNamespaceGrouping
-                                 .OrderBy(t => t.SymbolType!.Name))
+            catch (XmlSchemaValidationException ex)
             {
-                string fullFileName = Path.Combine(outputPath, symbol.FullFilePathAndName);
-                EnsureDirectory(Path.GetDirectoryName(fullFileName));
-
-                list.AddItem(new MarkdownLink(new MarkdownInlineCode(symbol.DisplayName), symbol.FullFilePathAndName));
-
-                File.WriteAllText(fullFileName, new TypeDocumentation(assembly, symbol, documentation).ToString());
+                Console.WriteLine("The project could no be loaded correctly. " + ex.ToLog(true));
+                return -1;
             }
-            return list;
-        }
-
-        private static void ProcessAssembly(Assembly assembly, XmlDocumentation documentation, string outputPath, string? namespaceMatch, string indexPageName)
-        {
-            if (!Directory.Exists(outputPath))
+            if (!Project.Configuration.IsLoaded)
             {
-                Directory.CreateDirectory(outputPath);
-            }
-            
-            IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader(assembly.GetName().Name, 1);
-
-            TypeSymbolProvider.Instance.Add("index", String.Empty, indexPageName);
-            // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
-            TypeSymbolProvider.Instance.Add(LoadAssemblyTypes(assembly).Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null && t.Namespace != null));
-
-            foreach (IGrouping<string?, TypeSymbol> typeNamespaceGrouping in TypeSymbolProvider
-                                                                           .Instance
-                                                                           .Select(kvp => kvp.Value)
-                                                                           .GroupBy(type => type.SymbolType?.Namespace)
-                                                                           .Where(g =>  g.Key != null && (namespaceMatch is null || Regex.IsMatch(g.Key, namespaceMatch)))
-                                                                           .OrderBy(g => g.Key))
-            {
-                string documentationDir = typeNamespaceGrouping.First().FilePath;
-                EnsureDirectory(documentationDir);
-
-                indexPage.AppendHeader(typeNamespaceGrouping.Key, 2);
-                indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping!, outputPath, documentation, assembly));
+                Console.WriteLine("The project could no be loaded correctly.");
+                return -1;
             }
 
-            File.WriteAllText(Path.Combine(outputPath, $"{indexPageName}.md"), indexPage.ToString());
-        }
-
-        private static string DetermineCurrentProcessFullFilePath()
-        {
-            return Process.GetCurrentProcess().MainModule?.FileName ?? throw new InvalidOperationException("Cannot get the main module of the current process.");
+            DocumentationProcessor.WriteCurrentProjectConfiguration(@out);
+            return 0;
         }
 
         private static void EnsureDirectory(string? directoryName)

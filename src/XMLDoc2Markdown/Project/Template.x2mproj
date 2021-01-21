@@ -7,7 +7,7 @@
         <Index Name="name_of_index.md" />
         
         <!--Optional;; The regex used to determine which namespaces to include in the documentation. If empty all will be included.-->
-        <NamespaceRegex>.</NamespaceRegex>
+        <NamespaceMatch>.</NamespaceMatch>
     </Properties>
 
     <!--Required;;Target information for the assembly to process. At least one, can have multiple targets.-->
@@ -23,10 +23,10 @@
 
         <!--Optional;; A list of assembies and nugetpackages to include-->
         <References>
-            <Assembly>path\to\external\reference\assembly.dll</Assembly>
-            <Assembly>path\to\external\references\*.dll</Assembly>
-            <Nuget>path\to\nuget_package.nupkg</Nuget>
-            <Nuget>path\to\nuget_packages\*.nupkg</Nuget>
+            <AssemblyReference>path\to\external\reference\assembly.dll</AssemblyReference>
+            <AssemblyReference>path\to\external\references\*.dll</AssemblyReference>
+            <NugetReference>path\to\nuget_package.nupkg</NugetReference>
+            <NugetReference>path\to\nuget_packages\*.nupkg</NugetReference>
         </References>
 
         <!--Optional;; Raw markdown code, that will be inculded on top of the index file, below the assembly name.-->

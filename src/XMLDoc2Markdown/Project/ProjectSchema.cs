@@ -15,36 +15,44 @@ using System.Xml.Serialization;
 // 
 namespace XMLDoc2Markdown.Project
 {
+
     /// <remarks/>
     [System.CodeDom.Compiler.GeneratedCodeAttribute("xsd", "4.8.3928.0")]
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace="", IsNullable=false)]
-    public partial class Project {
-        
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    public partial class Project
+    {
+
         private Properties propertiesField;
-        
+
         private Assembly[] assemblyField;
-        
+
         /// <remarks/>
-        public Properties Properties {
-            get {
+        public Properties Properties
+        {
+            get
+            {
                 return this.propertiesField;
             }
-            set {
+            set
+            {
                 this.propertiesField = value;
             }
         }
-        
+
         /// <remarks/>
         [System.Xml.Serialization.XmlElementAttribute("Assembly")]
-        public Assembly[] Assembly {
-            get {
+        public Assembly[] Assembly
+        {
+            get
+            {
                 return this.assemblyField;
             }
-            set {
+            set
+            {
                 this.assemblyField = value;
             }
         }
@@ -55,43 +63,53 @@ namespace XMLDoc2Markdown.Project
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace="", IsNullable=false)]
-    public partial class Properties {
-        
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    public partial class Properties
+    {
+
         private Output outputField;
-        
+
         private Index indexField;
-        
+
         private string namespaceRegexField;
-        
+
         /// <remarks/>
-        public Output Output {
-            get {
+        public Output Output
+        {
+            get
+            {
                 return this.outputField;
             }
-            set {
+            set
+            {
                 this.outputField = value;
             }
         }
-        
+
         /// <remarks/>
-        public Index Index {
-            get {
+        public Index Index
+        {
+            get
+            {
                 return this.indexField;
             }
-            set {
+            set
+            {
                 this.indexField = value;
             }
         }
-        
+
         /// <remarks/>
-        [System.Xml.Serialization.XmlElementAttribute(DataType="NMTOKEN")]
-        public string NamespaceRegex {
-            get {
+        [System.Xml.Serialization.XmlElementAttribute(DataType = "NMTOKEN")]
+        public string NamespaceMatch
+        {
+            get
+            {
                 return this.namespaceRegexField;
             }
-            set {
+            set
+            {
                 this.namespaceRegexField = value;
             }
         }
@@ -102,19 +120,23 @@ namespace XMLDoc2Markdown.Project
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace="", IsNullable=false)]
-    public partial class Output {
-        
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    public partial class Output
+    {
+
         private string pathField;
-        
+
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string Path {
-            get {
+        public string Path
+        {
+            get
+            {
                 return this.pathField;
             }
-            set {
+            set
+            {
                 this.pathField = value;
             }
         }
@@ -125,19 +147,23 @@ namespace XMLDoc2Markdown.Project
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace="", IsNullable=false)]
-    public partial class Index {
-        
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    public partial class Index
+    {
+
         private string nameField;
-        
+
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute(DataType="NCName")]
-        public string Name {
-            get {
+        [System.Xml.Serialization.XmlAttributeAttribute(DataType = "NCName")]
+        public string Name
+        {
+            get
+            {
                 return this.nameField;
             }
-            set {
+            set
+            {
                 this.nameField = value;
             }
         }
@@ -148,47 +174,68 @@ namespace XMLDoc2Markdown.Project
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace="", IsNullable=false)]
-    public partial class Assembly {
-        
-        private object[] itemsField;
-        
-        private string[] textField;
-        
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    public partial class Assembly
+    {
+
+        private string documentationField;
+
+        private References referencesField;
+
+        private IndexHeader indexHeaderField;
+
         private string fileField;
-        
+
         /// <remarks/>
-        [System.Xml.Serialization.XmlElementAttribute("Documentation", typeof(string))]
-        [System.Xml.Serialization.XmlElementAttribute("IndexHeader", typeof(IndexHeader))]
-        [System.Xml.Serialization.XmlElementAttribute("References", typeof(References))]
-        public object[] Items {
-            get {
-                return this.itemsField;
+        public string Documentation
+        {
+            get
+            {
+                return this.documentationField;
             }
-            set {
-                this.itemsField = value;
+            set
+            {
+                this.documentationField = value;
             }
         }
-        
+
         /// <remarks/>
-        [System.Xml.Serialization.XmlTextAttribute()]
-        public string[] Text {
-            get {
-                return this.textField;
+        public References References
+        {
+            get
+            {
+                return this.referencesField;
             }
-            set {
-                this.textField = value;
+            set
+            {
+                this.referencesField = value;
             }
         }
-        
+
+        /// <remarks/>
+        public IndexHeader IndexHeader
+        {
+            get
+            {
+                return this.indexHeaderField;
+            }
+            set
+            {
+                this.indexHeaderField = value;
+            }
+        }
+
         /// <remarks/>
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string File {
-            get {
+        public string File
+        {
+            get
+            {
                 return this.fileField;
             }
-            set {
+            set
+            {
                 this.fileField = value;
             }
         }
@@ -199,33 +246,40 @@ namespace XMLDoc2Markdown.Project
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace="", IsNullable=false)]
-    public partial class IndexHeader {
-        
-        private string fileField;
-        
-        private string[] textField;
-        
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    public partial class References
+    {
+
+        private string[] assemblyReferenceField;
+
+        private string[] nugetReferenceField;
+
         /// <remarks/>
-        [System.Xml.Serialization.XmlAttributeAttribute()]
-        public string File {
-            get {
-                return this.fileField;
+        [System.Xml.Serialization.XmlElementAttribute("AssemblyReference")]
+        public string[] AssemblyReference
+        {
+            get
+            {
+                return this.assemblyReferenceField;
             }
-            set {
-                this.fileField = value;
+            set
+            {
+                this.assemblyReferenceField = value;
             }
         }
-        
+
         /// <remarks/>
-        [System.Xml.Serialization.XmlTextAttribute()]
-        public string[] Text {
-            get {
-                return this.textField;
+        [System.Xml.Serialization.XmlElementAttribute("NugetReference")]
+        public string[] NugetReference
+        {
+            get
+            {
+                return this.nugetReferenceField;
             }
-            set {
-                this.textField = value;
+            set
+            {
+                this.nugetReferenceField = value;
             }
         }
     }
@@ -235,33 +289,40 @@ namespace XMLDoc2Markdown.Project
     [System.SerializableAttribute()]
     [System.Diagnostics.DebuggerStepThroughAttribute()]
     [System.ComponentModel.DesignerCategoryAttribute("code")]
-    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType=true)]
-    [System.Xml.Serialization.XmlRootAttribute(Namespace="", IsNullable=false)]
-    public partial class References {
-        
-        private Assembly[] assemblyField;
-        
-        private string[] nugetField;
-        
+    [System.Xml.Serialization.XmlTypeAttribute(AnonymousType = true)]
+    [System.Xml.Serialization.XmlRootAttribute(Namespace = "", IsNullable = false)]
+    public partial class IndexHeader
+    {
+
+        private string fileField;
+
+        private string[] textField;
+
         /// <remarks/>
-        [System.Xml.Serialization.XmlElementAttribute("Assembly")]
-        public Assembly[] Assembly {
-            get {
-                return this.assemblyField;
+        [System.Xml.Serialization.XmlAttributeAttribute()]
+        public string File
+        {
+            get
+            {
+                return this.fileField;
             }
-            set {
-                this.assemblyField = value;
+            set
+            {
+                this.fileField = value;
             }
         }
-        
+
         /// <remarks/>
-        [System.Xml.Serialization.XmlElementAttribute("Nuget")]
-        public string[] Nuget {
-            get {
-                return this.nugetField;
+        [System.Xml.Serialization.XmlTextAttribute()]
+        public string[] Text
+        {
+            get
+            {
+                return this.textField;
             }
-            set {
-                this.nugetField = value;
+            set
+            {
+                this.textField = value;
             }
         }
     }

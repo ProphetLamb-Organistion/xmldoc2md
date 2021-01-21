@@ -54,18 +54,18 @@ namespace XMLDoc2Markdown
 
 #region Constructor
 
-        public TypeSymbol(Type type, string filePath, string fileNameWithoutExtension)
+        public TypeSymbol(Type type, string directory, string fileNameWithoutExtension)
         {
             this.SymbolType = type;
-            this.FilePath = filePath;
+            this.Directory = directory;
             this.FileNameWithoutExtension = fileNameWithoutExtension;
             this.IsWellDefined = true;
         }
 
-        public TypeSymbol(string filePath, string fileNameWithoutExtension)
+        public TypeSymbol(string directory, string fileNameWithoutExtension)
         {
             this.SymbolType = null!;
-            this.FilePath = filePath;
+            this.Directory = directory;
             this.FileNameWithoutExtension = fileNameWithoutExtension;
             this.IsWellDefined = false;
         }
@@ -73,7 +73,7 @@ namespace XMLDoc2Markdown
         public TypeSymbol(Type type)
         {
             this.SymbolType = type;
-            this.FilePath = null!;
+            this.Directory = null!;
             this.FileNameWithoutExtension = null!;
             this.IsWellDefined = false;
         }
@@ -84,9 +84,9 @@ namespace XMLDoc2Markdown
 
         public bool IsWellDefined { get; }
 
-        public string FilePath { get; }
+        public string Directory { get; }
         public string FileNameWithoutExtension { get; }
-        public string FullFilePathAndName => Path.Combine(this.FilePath, this.FileNameWithoutExtension + ".md");
+        public string FilePath => Path.Combine(this.Directory, this.FileNameWithoutExtension + ".md");
         public Type SymbolType { get; }
 
         public TypeInfo SymbolTypeInfo => this._symbolTypeInfo ??= this.SymbolType?.GetTypeInfo() ?? throw new InvalidOperationException("SymbolType is null.");
@@ -331,18 +331,18 @@ namespace XMLDoc2Markdown
 
         public string GetInternalDocsUrl(TypeSymbol? relativeTo)
         {
-            if (this.FullFilePathAndName is null)
+            if (this.FilePath is null)
             {
                 throw new InvalidOperationException("FullFilePathAndName is null.");
             }
 
             if (relativeTo is null) // Assume we are at root
             {
-                return this.FullFilePathAndName;
+                return this.FilePath;
             }
 
-            var rel = Path.Combine(s_virtualDeviceRoot, relativeTo.FilePath);
-            var tar = Path.Combine(s_virtualDeviceRoot, this.FullFilePathAndName);
+            var rel = Path.Combine(s_virtualDeviceRoot, relativeTo.Directory);
+            var tar = Path.Combine(s_virtualDeviceRoot, this.FilePath);
             return Path.GetRelativePath(rel, tar);
         }
 

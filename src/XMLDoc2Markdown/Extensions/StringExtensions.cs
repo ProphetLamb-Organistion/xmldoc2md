@@ -25,32 +25,55 @@ namespace XMLDoc2Markdown.Extensions
             return typeName.ReplaceMany(s_typeNameToFileName_oldValues, s_typeNameToFileName_newValues);
         }
 
-        /// <summary>
-        /// Returns whether the string is a valid RegEx pattern.
-        /// </summary>
-        /// <param name="pattern">The string representing the RegEx pattern.</param>
-        /// <returns><see cref="true"/> if the string is a valid RegEx pattern; otherwise <see cref="false"/>.</returns>
-        public static bool IsValidRegex(this string pattern)
+        private static readonly char[] s_globWildcards = {'*', '?', '['};
+        private static readonly char[] s_pathSeparators = {'\\', '/'};
+
+        public static bool IsValidRegex(this string self)
         {
-            if (string.IsNullOrWhiteSpace(pattern))
+            if (string.IsNullOrWhiteSpace(self))
             {
                 return false;
             }
 
             try
             {
-                Regex.Match("", pattern);
+                _ = Regex.Match("", self);
             }
             catch (ArgumentException)
             {
                 return false;
             }
-
             return true;
         }
 
-        private static readonly char[] s_globWildcards = {'*', '?', '['};
-        private static readonly char[] s_pathSeparators = {'\\', '/'};
+        public static bool IsGlobExpression(this string self)
+        {
+            if (string.IsNullOrWhiteSpace(self))
+            {
+                return false;
+            }
+
+            if (self.IndexOfAny(s_globWildcards) == -1)
+            {
+                return false;
+            }
+
+            try
+            {
+                _ = new Glob(self).IsMatch("test");
+            }
+            catch (GlobPatternException)
+            {
+                return false;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
+            return true;
+        }
+
+
         /// <summary>
         /// Returns all files that fulfill the glob pattern.
         /// </summary>

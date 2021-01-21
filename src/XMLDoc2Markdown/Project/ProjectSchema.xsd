@@ -1,56 +1,59 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
-  <xs:element name="Project">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="Properties"/>
-        <xs:element maxOccurs="unbounded" ref="Assembly"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="Properties">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element ref="Output"/>
-        <xs:element ref="Index"/>
-        <xs:element ref="NamespaceRegex"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="Output">
-    <xs:complexType>
-      <xs:attribute name="Path" use="required"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="Index">
-    <xs:complexType>
-      <xs:attribute name="Name" use="required" type="xs:NCName"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="NamespaceRegex" type="xs:NMTOKEN"/>
-  <xs:element name="Assembly">
-    <xs:complexType mixed="true">
-      <xs:choice minOccurs="0" maxOccurs="unbounded">
-        <xs:element ref="Documentation"/>
-        <xs:element ref="IndexHeader"/>
-        <xs:element ref="References"/>
-      </xs:choice>
-      <xs:attribute name="File"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="Documentation" type="xs:string"/>
-  <xs:element name="IndexHeader">
-    <xs:complexType mixed="true">
-      <xs:attribute name="File"/>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="References">
-    <xs:complexType>
-      <xs:sequence>
-        <xs:element maxOccurs="unbounded" ref="Assembly"/>
-        <xs:element maxOccurs="unbounded" ref="Nuget"/>
-      </xs:sequence>
-    </xs:complexType>
-  </xs:element>
-  <xs:element name="Nuget" type="xs:string"/>
+    <xs:element name="Project">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Properties"/>
+                <xs:element maxOccurs="unbounded" ref="Assembly"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Properties">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element ref="Output"/>
+                <xs:element ref="Index"/>
+                <xs:element ref="NamespaceMatch"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Output">
+        <xs:complexType>
+            <xs:attribute name="Path" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Index">
+        <xs:complexType>
+            <xs:attribute name="Name" use="required" type="xs:NCName"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="NamespaceMatch" type="xs:NMTOKEN"/>
+    <xs:element name="Assembly">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:sequence minOccurs="0">
+                    <xs:element ref="Documentation"/>
+                    <xs:element ref="References"/>
+                </xs:sequence>
+                <xs:element ref="IndexHeader"/>
+            </xs:sequence>
+            <xs:attribute name="File" use="required"/>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="Documentation" type="xs:string"/>
+    <xs:element name="References">
+        <xs:complexType>
+            <xs:sequence>
+                <xs:element maxOccurs="unbounded" ref="AssemblyReference"/>
+                <xs:element maxOccurs="unbounded" ref="NugetReference"/>
+            </xs:sequence>
+        </xs:complexType>
+    </xs:element>
+    <xs:element name="AssemblyReference" type="xs:string"/>
+    <xs:element name="NugetReference" type="xs:string"/>
+    <xs:element name="IndexHeader">
+        <xs:complexType mixed="true">
+            <xs:attribute name="File"/>
+        </xs:complexType>
+    </xs:element>
 </xs:schema>

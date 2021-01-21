@@ -34,6 +34,16 @@
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <None Update="Project\ProjectSchema.xsd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="AssemblyHelpers\" />
+  </ItemGroup>
+
   <Target Name="PostBuild" AfterTargets="PostBuildEvent">
     <Exec Command="dotnet publish &quot;../../sample/MyClassLib/MyClassLib.csproj&quot; -c Release -o &quot;../../publish&quot;" />
   </Target>

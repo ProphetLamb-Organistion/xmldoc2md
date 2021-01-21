@@ -1,7 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Reflection;
-using System.Text;
 
 namespace XMLDoc2Markdown.Extensions
 {
@@ -17,7 +14,7 @@ namespace XMLDoc2Markdown.Extensions
         {
             if (appendInnerException && ex.InnerException != null)
             {
-                return ex.ToLog() + ex.InnerException.ToLog();
+                return ex.ToLog() + ex.InnerException!.ToLog();
             }
 
             return ex.ToLog();
