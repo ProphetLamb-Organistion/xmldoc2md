@@ -125,11 +125,11 @@ namespace XMLDoc2Markdown
             }
             catch (UnauthorizedAccessException ex)
             {
-                Console.WriteLine($"Could not open settings from file {s_settingsFileName}. " + ex.ToLog(true));
+                Console.WriteLine($"Could not open settings from file '{s_settingsFileName}'. " + ex.ToLog(true));
             }
             catch (InvalidOperationException ex)
             {
-                Console.WriteLine($"Could not reflect settings object from file {s_settingsFileName}. " + ex.ToLog(true));
+                Console.WriteLine($"Could not reflect settings object from file '{s_settingsFileName}'. " + ex.ToLog(true));
             }
 
             if (deserialized is null)
@@ -164,7 +164,7 @@ namespace XMLDoc2Markdown
             }
             catch (UnauthorizedAccessException ex)
             {
-                throw new InvalidOperationException($"Could not write settings. {s_settingsFileName}", ex);
+                throw new InvalidOperationException($"Could not write settings. '{s_settingsFileName}'", ex);
             }
         }
 

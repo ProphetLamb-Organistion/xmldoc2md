@@ -183,7 +183,7 @@ namespace XMLDoc2Markdown.Extensions
 
             if (type.Assembly != typeof(string).Assembly)
             {
-                throw new InvalidOperationException($"{type.FullName} is not a mscorlib type.");
+                throw new InvalidOperationException($"'{type.FullName}' is not a framework type.");
             }
 
             return (type.FullName is null, type.Namespace is null) switch

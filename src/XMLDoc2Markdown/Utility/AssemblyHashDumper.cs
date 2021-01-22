@@ -21,9 +21,12 @@ namespace XMLDoc2Markdown.Utility
                 {
                     using FileStream sr = File.OpenRead(fullFileName);
                     PEReader reader = new PEReader(sr);
-                    MetadataReader metadataReader = reader.GetMetadataReader();
-                    StringHandle nameHandle = metadataReader.GetModuleDefinition().Name;
-                    name = Path.GetFileNameWithoutExtension(metadataReader.GetString(nameHandle))?.ToLowerInvariant();
+                    if (reader.HasMetadata)
+                    {
+                        MetadataReader metadataReader = reader.GetMetadataReader();
+                        StringHandle nameHandle = metadataReader.GetModuleDefinition().Name;
+                        name = Path.GetFileNameWithoutExtension(metadataReader.GetString(nameHandle))?.ToLowerInvariant();
+                    }
                 }
                 catch (Exception ex)
                 {

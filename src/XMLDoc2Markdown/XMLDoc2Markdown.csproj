@@ -25,6 +25,18 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <None Remove="Project\ProjectSchema.xsd" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Project\ProjectSchema.xsd"/>
+    <ContentWithTargetPath Include="Project\ProjectSchema.xsd">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>ProjectSchema.xsd</TargetPath>
+    </ContentWithTargetPath>
+  </ItemGroup>
+
+  <ItemGroup>
     <None Include="Project\Template.x2mproj" />
   </ItemGroup>
 
@@ -32,12 +44,6 @@
     <PackageReference Include="Glob" Version="1.1.8" />
     <PackageReference Include="MarkdownBuilder" Version="0.2.0" />
     <PackageReference Include="Microsoft.Extensions.CommandLineUtils" Version="1.1.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Project\ProjectSchema.xsd">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
 
   <ItemGroup>

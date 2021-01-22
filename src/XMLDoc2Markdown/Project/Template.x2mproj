@@ -3,8 +3,8 @@
         <!--Required;; The path to which the documentation will be written.-->
         <Output Path="path\to\output\" />
 
-        <!--Optional; index.md; The name of the index file.-->
-        <Index Name="name_of_index.md" />
+        <!--Optional; index; The name without extension of the index file.-->
+        <Index Name="name_of_index" />
 
         <!--Optional;; The regex used to determine which namespaces to include in the documentation. If empty all will be included.-->
         <NamespaceMatch>.</NamespaceMatch>

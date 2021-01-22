@@ -319,7 +319,7 @@ namespace XMLDoc2Markdown
 
             if (!this.SymbolType.Assembly.IsSystemAssembly())
             {
-                throw new InvalidOperationException($"{this.SymbolType.FullName} is not a system assembly.");
+                throw new InvalidOperationException($"'{this.SymbolType.FullName}' is not a system assembly.");
             }
 
             return (this.SymbolType.FullName is null, this.SymbolType.Namespace is null) switch

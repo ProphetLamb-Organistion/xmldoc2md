@@ -73,14 +73,32 @@ namespace XMLDoc2Markdown.Extensions
 
 
         /// <summary>
-        ///     Returns all files that fulfill the glob pattern.
+        /// Returns the full file path and names of all files, that fulfill the glob pattern.
         /// </summary>
         /// <param name="globFilePath">The glob file pattern.</param>
-        /// <returns>A enumerable sequence of all files that fulfill the glob pattern.</returns>
+        /// <returns>An enumerable sequence of full file path and names that fulfill the glob pattern.</returns>
         public static IEnumerable<string> GetGlobFiles(this string globFilePath)
+        {
+            IEnumerable<string> results = GetGlobFiles(globFilePath, out string? directory);
+            if (directory is null)
+            {
+                return Enumerable.Empty<string>();
+            }
+
+            return results.Select(f => Path.Combine(directory, f));
+        }
+
+        /// <summary>
+        /// Returns the file path and names relative to the shared root, of all files, that fulfill the glob pattern.
+        /// </summary>
+        /// <param name="globFilePath">The glob file pattern.</param>
+        /// <param name="sharedRootDirectory">The directory that all files that fulfill the glob pattern share.</param>
+        /// <returns>An enumerable sequence of file path and names relative to the shared root, of all files, that fulfill the glob pattern.</returns>
+        public static IEnumerable<string> GetGlobFiles(this string globFilePath, out string? sharedRootDirectory)
         {
             if (!Path.IsPathRooted(globFilePath))
             {
+                sharedRootDirectory = Environment.CurrentDirectory;
                 return Glob.Files(Environment.CurrentDirectory, globFilePath);
             }
 
@@ -88,16 +106,24 @@ namespace XMLDoc2Markdown.Extensions
             if (globFilePath.IndexOfAny(s_globWildcards) == -1)
             {
                 var fi = new FileInfo(globFilePath);
-                return fi.Exists ? new[] {fi.FullName} : Enumerable.Empty<string>();
+                if (fi.Exists)
+                {
+                    sharedRootDirectory = fi.DirectoryName!;
+                    return new [] {fi.Name};
+                }
+
+                sharedRootDirectory = null;
+                return Enumerable.Empty<string>();
             }
 
             // Split the glob as close to wildcard as possible
             string[] pathPortions = globFilePath.Split(s_pathSeparators, StringSplitOptions.RemoveEmptyEntries);
             int portionBreakIndex = pathPortions.TakeWhile(portion => portion.IndexOfAny(s_globWildcards) == -1).Count();
 
-            string directory = string.Join('\\', pathPortions, 0, portionBreakIndex);
+            sharedRootDirectory = string.Join('\\', pathPortions, 0, portionBreakIndex);
             string glob = portionBreakIndex == pathPortions.Length ? string.Empty : string.Join('\\', pathPortions, portionBreakIndex, pathPortions.Length - portionBreakIndex);
-            return Glob.Files(directory, glob).Select(relativePath => Path.Combine(directory, relativePath));
+
+            return Glob.Files(sharedRootDirectory, glob);
         }
 
         public static string ReplaceMany(this string self, ICollection<string> oldValues, ICollection<string> newValues)

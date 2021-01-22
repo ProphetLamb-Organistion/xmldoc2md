@@ -14,6 +14,7 @@ using Markdown;
 using XMLDoc2Markdown.AssemblyHelpers;
 using XMLDoc2Markdown.Extensions;
 using XMLDoc2Markdown.Project;
+using XMLDoc2Markdown.Utility;
 
 using Assembly = System.Reflection.Assembly;
 
@@ -21,34 +22,39 @@ namespace XMLDoc2Markdown
 {
     internal static class DocumentationProcessor
     {
-        [STAThread]
-        public static void WriteCurrentProjectConfiguration(string outputPath)
+        public static void WriteCurrentProjectConfiguration()
         {
-            Project.Project project = Configuration.Current;
-
-            TypeSymbolProvider.Instance.Add("index", ".\\", project.Properties.Index.Name);
-            IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader("Index", 1);
-
-            for (int index = 0; index < project.Assembly.Length; index++)
+            using (WorkingDirectoryContext.Modulate(Path.GetDirectoryName(Configuration.ProjectFilePath)))
             {
-                ProcessAssembly(index, outputPath, indexPage, out WeakReference alcWeakReference);
-                for (int i = 0; alcWeakReference.IsAlive && i < 128; i++)
-                {
-                    GC.Collect();
-                    GC.WaitForPendingFinalizers();
-                }
-            }
+                EnsureDirectory(Configuration.Current.Properties.Output.Path);
 
-            File.WriteAllText(Path.Combine(outputPath, TypeSymbolProvider.Instance["index"].FilePath), indexPage.ToString());
+                Project.Project project = Configuration.Current;
+
+                TypeSymbolProvider.Instance.Add("index", ".\\", project.Properties.Index.Name);
+                IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader("Index", 1);
+
+                for (int index = 0; index < project.Assembly.Length; index++)
+                {
+                    ProcessAssembly(index, indexPage, out WeakReference alcWeakReference);
+                    for (int i = 0; alcWeakReference.IsAlive && i < 128; i++)
+                    {
+                        GC.Collect();
+                        GC.WaitForPendingFinalizers();
+                    }
+                }
+
+                File.WriteAllText(
+                    Path.Combine(Configuration.Current.Properties.Output.Path, TypeSymbolProvider.Instance["index"].FilePath),
+                    indexPage.ToString());
+            }
         }
 
-        [STAThread]
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ProcessAssembly(int assemblyIndex, string outputPath, IMarkdownDocument indexPage, out WeakReference loadContextWeakReference)
+        private static void ProcessAssembly(int assemblyIndex, IMarkdownDocument indexPage, out WeakReference loadContextWeakReference)
         {
             Project.Project project = Configuration.Current;
-            string assemblyFilePath = project.Assembly[assemblyIndex].File;
-
+            string assemblyFilePath = Path.GetFullPath(project.Assembly[assemblyIndex].File);
+            
             Func<string?, bool> namespaceFilter = s => !string.IsNullOrEmpty(s);
             string namespaceMatch = project.Properties.NamespaceMatch;
             if (namespaceMatch.IsValidRegex())
@@ -64,62 +70,27 @@ namespace XMLDoc2Markdown
             var assemblyLoadContext = new HostAssemblyLoadContext(assemblyFilePath);
             loadContextWeakReference = new WeakReference(assemblyLoadContext);
 
-            // Copy references
-            string[]? assemblyReferences = project.Assembly[assemblyIndex].References?.AssemblyReference;
-            if (assemblyReferences != null)
-            {
-                foreach (string sourceFilePath in assemblyReferences)
-                {
-                    string targetFilePath = Path.Combine(Path.GetDirectoryName(assemblyFilePath)!, Path.GetFileName(sourceFilePath));
-                    if (!File.Exists(targetFilePath))
-                    {
-                        File.Copy(sourceFilePath, targetFilePath);
-                    }
-                }
-            }
-
-            string[]? nugetReferences = project.Assembly[assemblyIndex].References?.NugetReference;
-            if (nugetReferences != null)
-            {
-                string tempoaryDirectory = Path.Combine(Path.GetTempPath(), "XMLDoc2Markdown", Path.GetFileNameWithoutExtension(assemblyFilePath) + '\\');
-                foreach (string sourceFilePath in nugetReferences)
-                {
-                    string nugetFileName = Path.GetFileName(sourceFilePath);
-                    string nugetExtractedFilePath = Path.Combine(tempoaryDirectory, nugetFileName + '\\');
-                    File.Copy(sourceFilePath, nugetExtractedFilePath);
-
-                    // Extract nuget package
-                    string nugetFilePath = Path.Combine(tempoaryDirectory, nugetFileName);
-                    using (FileStream fs = new FileStream(nugetExtractedFilePath, FileMode.Open, FileAccess.Read, FileShare.None))
-                    {
-                        ZipArchive nugetFile = new ZipArchive(fs);
-                        nugetFile.ExtractToDirectory(nugetFilePath);
-                    }
-
-                    // Glob for all dlls and copy directory content
-                    string targetFilePath = Path.Combine(Path.GetDirectoryName(assemblyFilePath)!, Path.GetFileName(sourceFilePath));
-                    foreach (FileSystemInfo fsi in Glob.Files(nugetFilePath, @"**\*.dll")
-                       .Select(Path.GetDirectoryName)
-                       .Distinct()
-                       .Where(Directory.Exists)
-                       .SelectMany(d => new DirectoryInfo(d!).GetFileSystemInfos()))
-                    {
-                        if (fsi is FileInfo file)
-                        {
-                            file.CopyTo(Path.Combine(targetFilePath, file.Name));
-                        }
-                    }
-                }
-
-                Directory.Delete(tempoaryDirectory);
-            }
+            CopyAssemblyReferences(project.Assembly[assemblyIndex]);
 
             // Load assembly
             Assembly assembly = assemblyLoadContext.LoadFromAssemblyPath(assemblyFilePath);
 
-            var documentation = new XmlDocumentation(assemblyFilePath);
+            // Parse xml documentation
+            XmlDocumentation documentation = new XmlDocumentation(assemblyFilePath).Load();
 
-            indexPage.AppendHeader(assembly.GetName().Name, 2);
+            // Append header to index page
+            indexPage.AppendHeader("Assembly - " + assembly.GetName().Name, 2);
+            IndexHeader headerInfo = project.Assembly[assemblyIndex].IndexHeader;
+            IMarkdownBlockElement? headerContent = null;
+            if (File.Exists(headerInfo.File))
+            {
+                headerContent = Extensions.MarkdownDocumentExtensions.BlockFromString(File.ReadAllText(headerInfo.File));
+            }
+            else if (headerInfo.Text != null && headerInfo.Text.Length != 0)
+            {
+                headerContent = Extensions.MarkdownDocumentExtensions.BlockFromString(string.Join("\r\n", headerInfo.Text));
+            }
+            indexPage.Append(headerContent);
 
             // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
             TypeSymbolProvider.Instance.Add(LoadAssemblyTypes(assembly).Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null && t.Namespace != null));
@@ -135,7 +106,7 @@ namespace XMLDoc2Markdown
                 EnsureDirectory(documentationDir);
 
                 indexPage.AppendHeader(typeNamespaceGrouping.Key, 3);
-                indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping!, outputPath, documentation, assembly));
+                indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping!, Configuration.Current.Properties.Output.Path, documentation, assembly));
             }
 
             // Unload assembly
@@ -198,6 +169,75 @@ namespace XMLDoc2Markdown
             }
 
             return list;
+        }
+
+        private static void CopyAssemblyReferences(Project.Assembly assembly)
+        {
+            string? targetDirectory = Path.GetDirectoryName(assembly.File);
+            if (targetDirectory is null)
+            {
+                throw new DirectoryNotFoundException($"Could not find parent directory for reference '{assembly.File}'.");
+            }
+
+            string[]? assemblyReferences = assembly.References?.AssemblyReference;
+            if (assemblyReferences != null)
+            {
+                foreach (string sourceFilePath in assemblyReferences)
+                {
+                    string targetFilePath = Path.Combine(targetDirectory, Path.GetFileName(sourceFilePath));
+                    if (!File.Exists(targetFilePath))
+                    {
+                        File.Copy(sourceFilePath, targetFilePath);
+                        LoadAssemblyReferenceDocumentation(targetFilePath);
+                    }
+                }
+            }
+
+            string[]? nugetReferences = assembly.References?.NugetReference;
+            if (nugetReferences != null)
+            {
+                string tempoaryDirectory = Path.Combine(Path.GetTempPath(), "XMLDoc2Markdown", Path.GetFileNameWithoutExtension(assembly.File) + '\\');
+                EnsureDirectory(tempoaryDirectory);
+
+                foreach (string sourceFilePath in nugetReferences)
+                {
+                    string nugetFileName = Path.GetFileName(sourceFilePath);
+                    string nugetExtractedFilePath = Path.Combine(tempoaryDirectory, nugetFileName + '\\');
+                    File.Copy(sourceFilePath, nugetExtractedFilePath);
+
+                    // Extract nuget package
+                    string nugetFilePath = Path.Combine(tempoaryDirectory, nugetFileName);
+                    EnsureDirectory(nugetFilePath);
+
+                    using (var fs = new FileStream(nugetExtractedFilePath, FileMode.Open, FileAccess.Read, FileShare.None))
+                    {
+                        var nugetArchive = new ZipArchive(fs);
+                        nugetArchive.ExtractToDirectory(nugetFilePath);
+                    }
+
+                    // Glob for all dlls and copy directory content
+                    foreach (FileSystemInfo fsi in Glob.Files(nugetFilePath, @"**\*.dll")
+                       .Select(Path.GetDirectoryName)
+                       .Distinct()
+                       .Where(Directory.Exists)
+                       .SelectMany(d => new DirectoryInfo(d!).GetFileSystemInfos()))
+                    {
+                        if (fsi is FileInfo file)
+                        {
+                            string targetFilePath = Path.Combine(targetDirectory, file.Name);
+                            file.CopyTo(targetFilePath);
+                            LoadAssemblyReferenceDocumentation(targetFilePath);
+                        }
+                    }
+                }
+
+                Directory.Delete(tempoaryDirectory);
+            }
+        }
+
+        private static void LoadAssemblyReferenceDocumentation(string dllFilePath)
+        {
+
         }
 
         private static void EnsureDirectory(string? directoryName)

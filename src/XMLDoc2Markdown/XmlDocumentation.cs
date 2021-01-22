@@ -13,16 +13,33 @@ namespace XMLDoc2Markdown
     {
         public XmlDocumentation(string dllPath)
         {
-            string xmlPath = Path.Combine(Directory.GetParent(dllPath).FullName, Path.GetFileNameWithoutExtension(dllPath) + ".xml");
+            this.XmlFilePath = Path.Combine(Directory.GetParent(dllPath).FullName, Path.GetFileNameWithoutExtension(dllPath) + ".xml");
 
-            if (!File.Exists(xmlPath))
+            if (!File.Exists(this.XmlFilePath))
             {
-                throw new Exception($"Not XML documentation file founded for library {dllPath}.");
+                throw new Exception($"No XML documentation file founded for library '{dllPath}'.");
+            }
+        }
+
+        public string XmlFilePath { get; protected set; }
+
+        public bool IsLoaded { get; protected set; }
+
+        public string? AssemblyName { get; protected set; }
+
+        public IEnumerable<XElement>? Members { get; protected set; }
+
+
+        protected virtual void LoadFile()
+        {
+            if (this.IsLoaded)
+            {
+                throw new InvalidOperationException("XmlDocumentation already loaded.");
             }
 
             try
             {
-                var xDocument = XDocument.Parse(File.ReadAllText(xmlPath));
+                var xDocument = XDocument.Parse(File.ReadAllText(this.XmlFilePath));
 
                 this.AssemblyName = xDocument.Descendants("assembly").First().Elements("name").First().Value;
                 this.Members = xDocument.Descendants("members").First().Elements("member");
@@ -31,13 +48,23 @@ namespace XMLDoc2Markdown
             {
                 throw new Exception("Unable to parse XML documentation", e);
             }
+
+            this.IsLoaded = true;
         }
 
-        public string AssemblyName { get; }
-        public IEnumerable<XElement> Members { get; }
-
-        public XElement? GetMember(MemberInfo memberInfo)
+        public XmlDocumentation Load()
         {
+            this.LoadFile();
+            return this;
+        }
+
+        public virtual XElement? GetMember(MemberInfo memberInfo)
+        {
+            if (!this.IsLoaded)
+            {
+                throw new InvalidOperationException("XmlDocumentation is not loaded.");
+            }
+
             string fullName;
             if (memberInfo is Type type)
             {
@@ -81,6 +108,13 @@ namespace XMLDoc2Markdown
             return this.GetMember($"{memberInfo.MemberType.GetAlias()}:{fullName}");
         }
 
-        public XElement? GetMember(string name) => this.Members.FirstOrDefault(member => member.Attribute("name")?.Value == name);
+        public virtual XElement? GetMember(string name)
+        {
+            if (!this.IsLoaded)
+            {
+                throw new InvalidOperationException("XmlDocumentation is not loaded.");
+            }
+            return this.Members!.FirstOrDefault(member => member.Attribute("name")?.Value == name);
+        }
     }
 }

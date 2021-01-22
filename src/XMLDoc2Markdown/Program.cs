@@ -24,7 +24,7 @@ namespace XMLDoc2Markdown
             Debugger.Launch();
             string? solutionRoot = Environment.CurrentDirectory;
             DirectoryInfo? parent = null;
-            while (!(solutionRoot is null) && !String.Equals(parent?.Name, "xmldoc2md", StringComparison.InvariantCultureIgnoreCase))
+            while (!(solutionRoot is null) && !string.Equals(parent?.Name, "xmldoc2md", StringComparison.InvariantCultureIgnoreCase))
             {
                 parent = new DirectoryInfo(solutionRoot).Parent;
                 solutionRoot = parent?.FullName;
@@ -34,9 +34,9 @@ namespace XMLDoc2Markdown
             {
                 throw new Exception();
             }
-            args = new[] { Path.Combine(solutionRoot, @"docs\sample"), Path.Combine(solutionRoot, @"publish\MyClassLib.dll") };
-            //args[0] = Path.Combine(solutionRoot, @"docs\GOC");
-            //args[1] = @"C:\Users\Public\source\repos\GroupedObservableCollection\src\bin\Debug\netstandard2.0\GroupedObservableCollection.dll"; //@"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
+
+            args = new[] { Path.Combine(solutionRoot, @"publish\MyClassLib.dll"), "-o", Path.Combine(solutionRoot, @"docs\sample")};
+            //args = new[] {Path.Combine(solutionRoot, "sample\\sample.x2mproj")};
 
 #endif
             var app = new CommandLineApplication {Name = "xmldoc2md"};
@@ -44,17 +44,18 @@ namespace XMLDoc2Markdown
             app.VersionOption("-v|--version", () => $"Version {Assembly.GetEntryAssembly()!.GetCustomAttribute<AssemblyInformationalVersionAttribute>()?.InformationalVersion}");
             app.HelpOption("-?|-h|--help");
 
-            CommandArgument outArg = app.Argument("out", "Output directory");
+            CommandArgument srcArg = app.Argument("src", 
+                "File path or file glob specifying the assembly/ies to generate the XML documentation for.\r\n"
+              + "Or the file path of the project file to execute.");
 
-            CommandArgument srcArg = app.Argument("src", "DLL source path");
-
-            CommandOption projectOption = app.Option(
-                "-p <regex>|--project <regex>",
-                "Filename of the project to generate",
+            CommandOption outOption = app.Option(
+                "-o|--output;lt;output_directory&amp;gt;",
+                "Directory path to the output directory of the documentation. \r\n"
+              + "Must be specified when generating from source. But overwrites the output when executing a project file.",
                 CommandOptionType.SingleValue);
 
             CommandOption namespaceMatchOption = app.Option(
-                "-r--namespace-match <regex>",
+                "-n|--namespace-match;lt;regex_or_glob&amp;gt;",
                 "Glob or regex pattern to select namespaces",
                 CommandOptionType.SingleValue);
 
@@ -66,35 +67,35 @@ namespace XMLDoc2Markdown
             app.OnExecute(
                 () =>
                 {
-                    string? @out = outArg.Value;
+                    string? @out = outOption.HasValue() ? outOption.Value() : null;
                     string? src = srcArg.Value;
                     string? namespaceMatch = namespaceMatchOption.Value();
                     string indexPageName = indexPageNameOption.HasValue() ? indexPageNameOption.Value() : "index";
-                    string? projectFileName = projectOption.Value();
-
-                    if (projectOption.HasValue())
-                    {
-                        return ConfigureFromProject(projectFileName!, @out);
-                    }
-
-                    if (@out is null)
-                    {
-                        throw new CommandParsingException(app, "out is undefined.");
-                    }
-
-                    EnsureDirectory(@out);
-
+                    
                     if (src is null)
                     {
                         throw new CommandParsingException(app, "src is undefined.");
                     }
+                    
 
-                    if (!File.Exists(src))
+                    // Ensure that settings have loaded
+                    Settings.Instance.WriteTask.Wait();
+
+                    // Project file
+                    if (Path.GetExtension(src) == ".x2mproj")
                     {
-                        throw new FileNotFoundException("src was not found. " + src);
+                        return ConfigureFromProject(src, @out);
                     }
 
-                    return ConfigureFromFile(src, @out, namespaceMatch, indexPageName);
+                    // Assembly files
+                    if (@out is null)
+                    {
+                        throw new CommandParsingException(app, "out must be defined, when not executing a project file.");
+                    }
+
+                    EnsureDirectory(@out);
+
+                    return ConfigureFromFile(src!, @out, namespaceMatch, indexPageName);
                 });
 
             try
@@ -116,7 +117,7 @@ namespace XMLDoc2Markdown
             string[] targets = src.GetGlobFiles().ToArray();
 
             // Generate project configuration
-            Project.Project project = Configuration.Create();
+            Project.Project project = Configuration.Create(Path.Combine(Environment.CurrentDirectory, "__dummy.x2mproj"));
 
             project.Properties = new Properties {Index = new Index {Name = indexPageName}, NamespaceMatch = namespaceMatch, Output = new Output {Path = @out}};
 
@@ -126,22 +127,22 @@ namespace XMLDoc2Markdown
                 project.Assembly[i] = new Project.Assembly {Documentation = null, File = targets[i], IndexHeader = new IndexHeader {File = null, Text = null}, References = null};
             }
 
-            DocumentationProcessor.WriteCurrentProjectConfiguration(@out);
+            DocumentationProcessor.WriteCurrentProjectConfiguration();
             return 0;
         }
 
-        private static int ConfigureFromProject(string projectFileName, string @out)
+        private static int ConfigureFromProject(string projectFilePath, string? @out)
         {
-            if (!File.Exists(projectFileName))
+            if (!File.Exists(projectFilePath))
             {
-                Console.WriteLine("The specified project file could not be found. " + projectFileName);
+                Console.WriteLine("The specified project file could not be found. " + projectFilePath);
                 return -2;
             }
 
             // Prepare project configuration
             try
             {
-                Configuration.Load(projectFileName);
+                Configuration.Load(projectFilePath);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -160,7 +161,14 @@ namespace XMLDoc2Markdown
                 return -1;
             }
 
-            DocumentationProcessor.WriteCurrentProjectConfiguration(@out);
+            // Overwrite the output path, if specified
+            if (!string.IsNullOrWhiteSpace(@out))
+            {
+                EnsureDirectory(@out);
+                Configuration.Current.Properties.Output.Path = @out;
+            }
+            
+            DocumentationProcessor.WriteCurrentProjectConfiguration();
             return 0;
         }
 
