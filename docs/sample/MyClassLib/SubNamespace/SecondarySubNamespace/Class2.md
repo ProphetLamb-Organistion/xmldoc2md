@@ -8,21 +8,22 @@ Class3
 public class Class2
 ```
 
-Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [Class2](../MyClassLib.SubNamespace.SecondarySubNamespace/Class2.md)
+Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [Class2](Class2.md)
 
 ## Properties
 
 ### ProviderInstance
 
-Represents the static instance of [MyClass](../MyClassLib/MyClass.md).
+Represents the static instance of [MyClass](..\..\MyClass.md).
 
 ```csharp
 public static MyClass ProviderInstance { get; }
 ```
 
-#### Property Value
-
-MyClass<br>
+> #### Property Value
+> 
+> `MyClass`<br>
+> 
 
 ### StaticProvidedClass1
 
@@ -32,16 +33,23 @@ Gets the value of `MyClassLib.MyClass.MyEnum` of `MyClassLib.SubNamespace.Second
 public MyEnum StaticProvidedClass1 { get; }
 ```
 
-#### Property Value
+> #### Property Value
+> 
+> `MyEnum`<br>
+> 
 
-MyEnum<br>
+---
 
 ## Constructors
 
 ### Class2()
 
-
-
 ```csharp
 public Class2()
 ```
+
+> 
+
+---
+
+[`< Index`](..\..\..\index.md)

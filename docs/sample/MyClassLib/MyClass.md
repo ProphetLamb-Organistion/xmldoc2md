@@ -8,63 +8,72 @@ My class.
 public class MyClass : IMyInterface
 ```
 
-Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyClass](../MyClassLib/MyClass.md)
+Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyClass](MyClass.md)
 
-Implements [IMyInterface](../MyClassLib/IMyInterface.md)
+Implements [IMyInterface](IMyInterface.md)
 
 ## Properties
 
 ### MyProperty
 
-My property ([String](https://docs.microsoft.com/en-us/dotnet/api/system.string)).
+My property ([string](https://docs.microsoft.com/en-us/dotnet/api/system.string)).
 
 ```csharp
 public string MyProperty { get; protected set; }
 ```
 
-#### Property Value
-
-String<br>The property value.
+> #### Property Value
+> 
+> `string`<br>The property value.
+> 
 
 ### MyEnum
 
-My enum [MyEnum](../MyClassLib/MyEnum.md)
+My enum [MyEnum](MyEnum.md)
 
 ```csharp
 public MyEnum MyEnum { get; set; }
 ```
 
-#### Property Value
+> #### Property Value
+> 
+> `MyEnum`<br>The enum value
+> 
 
-MyEnum<br>The enum value
+---
 
 ## Constructors
 
 ### MyClass()
 
-Initializes a new instance of the [MyClass](../MyClassLib/MyClass.md) class.
+Initializes a new instance of the [MyClass](MyClass.md) class.
 
 ```csharp
 public MyClass()
 ```
 
-### MyClass(String, Int32)
+> 
 
-Initializes a new instance of the [MyClass](../MyClassLib/MyClass.md) class.
+### MyClass(string, int)
+
+Initializes a new instance of the [MyClass](MyClass.md) class.
 
 ```csharp
 public MyClass(string firstParam, int secondParam)
 ```
 
-#### Parameters
+> #### Parameters
+> 
+> firstParam : `string`<br>The first param.
+> 
+> secondParam : `int`<br>The second param.
+> 
 
-`firstParam` String<br>The first param.
-
-`secondParam` Int32<br>The second param.
+---
 
 ## Methods
 
-### Do(String, Int32)
+### Do(string, int)
 
 Do some thing.
 
@@ -72,17 +81,18 @@ Do some thing.
 public void Do(string firstParam, int secondParam)
 ```
 
-#### Parameters
-
-`firstParam` String<br>The first param.
-
-`secondParam` Int32<br>The second param.
+> #### Parameters
+> 
+> firstParam : `string`<br>The first param.
+> 
+> secondParam : `int`<br>The second param.
+> 
 
 #### Exceptions
 
 Exception<br>Thrown when...
 
-### Get(String)
+### Get(string)
 
 Gets some thing.
 
@@ -90,13 +100,14 @@ Gets some thing.
 public string Get(string param)
 ```
 
-#### Parameters
-
-`param` String<br>The param.
-
-#### Returns
-
-String<br>An empty string.
+> #### Parameters
+> 
+> param : `string`<br>The param.
+> 
+> #### Returns
+> 
+> string<br>An empty string.
+> 
 
 #### Exceptions
 
@@ -110,6 +121,10 @@ A static method.
 public static void StaticMethod()
 ```
 
+> 
+
+---
+
 ## Events
 
 ### MyEvent
@@ -117,5 +132,9 @@ public static void StaticMethod()
 My event.
 
 ```csharp
-public event EventHandler`1 MyEvent;
+public event EventHandler<EventArgs> MyEvent;
 ```
+
+---
+
+[`< Index`](..\index.md)

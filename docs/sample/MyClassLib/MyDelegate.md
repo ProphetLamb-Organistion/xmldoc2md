@@ -2,13 +2,11 @@
 
 Namespace: MyClassLib
 
-
-
 ```csharp
- sealed class MyDelegate : System.MulticastDelegate, System.ICloneable, System.Runtime.Serialization.ISerializable
+public sealed class MyDelegate : System.MulticastDelegate
 ```
 
-Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [Delegate](https://docs.microsoft.com/en-us/dotnet/api/system.delegate) → [MulticastDelegate](https://docs.microsoft.com/en-us/dotnet/api/system.multicastdelegate) → [MyDelegate](../MyClassLib/MyDelegate.md)
+Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [Delegate](https://docs.microsoft.com/en-us/dotnet/api/system.delegate) → [MulticastDelegate](https://docs.microsoft.com/en-us/dotnet/api/system.multicastdelegate) → [MyDelegate](MyDelegate.md)
 
 Implements [ICloneable](https://docs.microsoft.com/en-us/dotnet/api/system.icloneable), [ISerializable](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.serialization.iserializable)
 
@@ -16,86 +14,88 @@ Implements [ICloneable](https://docs.microsoft.com/en-us/dotnet/api/system.iclon
 
 ### Target
 
-
-
 ```csharp
 public object Target { get; }
 ```
 
-#### Property Value
-
-Object<br>
+> #### Property Value
+> 
+> `object`<br>
+> 
 
 ### Method
-
-
 
 ```csharp
 public MethodInfo Method { get; }
 ```
 
-#### Property Value
+> #### Property Value
+> 
+> `MethodInfo`<br>
+> 
 
-MethodInfo<br>
+---
 
 ## Constructors
 
-### MyDelegate(Object, IntPtr)
-
-
+### MyDelegate(object, IntPtr)
 
 ```csharp
 public MyDelegate(object object, IntPtr method)
 ```
 
-#### Parameters
+> #### Parameters
+> 
+> object : `object`<br>
+> 
+> method : `IntPtr`<br>
+> 
 
-`object` Object<br>
-
-`method` IntPtr<br>
+---
 
 ## Methods
 
-### Invoke(String)
-
-
+### Invoke(string)
 
 ```csharp
 public void Invoke(string str)
 ```
 
-#### Parameters
+> #### Parameters
+> 
+> str : `string`<br>
+> 
 
-`str` String<br>
-
-### BeginInvoke(String, AsyncCallback, Object)
-
-
+### BeginInvoke(string, AsyncCallback, object)
 
 ```csharp
 public IAsyncResult BeginInvoke(string str, AsyncCallback callback, object object)
 ```
 
-#### Parameters
-
-`str` String<br>
-
-`callback` AsyncCallback<br>
-
-`object` Object<br>
-
-#### Returns
-
-IAsyncResult<br>
+> #### Parameters
+> 
+> str : `string`<br>
+> 
+> callback : `AsyncCallback`<br>
+> 
+> object : `object`<br>
+> 
+> #### Returns
+> 
+> IAsyncResult<br>
+> 
 
 ### EndInvoke(IAsyncResult)
-
-
 
 ```csharp
 public void EndInvoke(IAsyncResult result)
 ```
 
-#### Parameters
+> #### Parameters
+> 
+> result : `IAsyncResult`<br>
+> 
 
-`result` IAsyncResult<br>
+---
+
+[`< Index`](..\index.md)

@@ -8,7 +8,7 @@ My abstract class.
 public abstract class MyAbstractClass
 ```
 
-Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyAbstractClass](../MyClassLib/MyAbstractClass.md)
+Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyAbstractClass](MyAbstractClass.md)
 
 ## Properties
 
@@ -20,9 +20,12 @@ My abstract property.
 public abstract int MyProperty { get; set; }
 ```
 
-#### Property Value
+> #### Property Value
+> 
+> `int`<br>The property value.
+> 
 
-Int32<br>The property value.
+---
 
 ## Methods
 
@@ -34,7 +37,9 @@ Do something.
 public abstract void Do()
 ```
 
-### Get(String)
+> 
+
+### Get(string)
 
 Gets something.
 
@@ -42,10 +47,15 @@ Gets something.
 protected string Get(string param)
 ```
 
-#### Parameters
+> #### Parameters
+> 
+> param : `string`<br>The param.
+> 
+> #### Returns
+> 
+> string<br>A string.
+> 
 
-`param` String<br>The param.
+---
 
-#### Returns
-
-String<br>A string.
+[`< Index`](..\index.md)

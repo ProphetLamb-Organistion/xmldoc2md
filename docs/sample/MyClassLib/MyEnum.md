@@ -8,7 +8,7 @@ My enum.
 public enum MyEnum
 ```
 
-Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [ValueType](https://docs.microsoft.com/en-us/dotnet/api/system.valuetype) → [Enum](https://docs.microsoft.com/en-us/dotnet/api/system.enum) → [MyEnum](../MyClassLib/MyEnum.md)
+Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [ValueType](https://docs.microsoft.com/en-us/dotnet/api/system.valuetype) → [Enum](https://docs.microsoft.com/en-us/dotnet/api/system.enum) → [MyEnum](MyEnum.md)
 
 Implements [IComparable](https://docs.microsoft.com/en-us/dotnet/api/system.icomparable), [IFormattable](https://docs.microsoft.com/en-us/dotnet/api/system.iformattable), [IConvertible](https://docs.microsoft.com/en-us/dotnet/api/system.iconvertible)
 
@@ -19,3 +19,5 @@ Implements [IComparable](https://docs.microsoft.com/en-us/dotnet/api/system.icom
 | Default | 0 | The default. |
 | First | 1 | The first. |
 | Second | 2 | The second. |
+
+[`< Index`](..\index.md)

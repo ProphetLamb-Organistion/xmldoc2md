@@ -10,7 +10,7 @@ public interface IMyInterface
 
 ## Methods
 
-### Do(String, Int32)
+### Do(string, int)
 
 Do some thing.
 
@@ -18,13 +18,14 @@ Do some thing.
 void Do(string firstParam, int secondParam)
 ```
 
-#### Parameters
+> #### Parameters
+> 
+> firstParam : `string`<br>The first param.
+> 
+> secondParam : `int`<br>The second param.
+> 
 
-`firstParam` String<br>The first param.
-
-`secondParam` Int32<br>The second param.
-
-### Get(String)
+### Get(string)
 
 Gets some thing.
 
@@ -32,10 +33,15 @@ Gets some thing.
 string Get(string param)
 ```
 
-#### Parameters
+> #### Parameters
+> 
+> param : `string`<br>The param.
+> 
+> #### Returns
+> 
+> string<br>An empty string.
+> 
 
-`param` String<br>The param.
+---
 
-#### Returns
-
-String<br>An empty string.
+[`< Index`](..\index.md)

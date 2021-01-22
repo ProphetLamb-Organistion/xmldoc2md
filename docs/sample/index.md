@@ -1,20 +1,21 @@
-# MyClassLib
+# Index
 
-## `MyClassLib`
+## MyClassLib
 
-- [`IMyInterface`](MyClassLib/IMyInterface.md)
-- [`MyAbstractClass`](MyClassLib/MyAbstractClass.md)
-- [`MyClass`](MyClassLib/MyClass.md)
-- [`MyDelegate`](MyClassLib/MyDelegate.md)
-- [`MyEnum`](MyClassLib/MyEnum.md)
+### MyClassLib
 
-## `MyClassLib.SubNamespace`
+- [`IMyInterface`](MyClassLib\IMyInterface.md)
+- [`MyAbstractClass`](MyClassLib\MyAbstractClass.md)
+- [`MyClass`](MyClassLib\MyClass.md)
+- [`MyDelegate`](MyClassLib\MyDelegate.md)
+- [`MyEnum`](MyClassLib\MyEnum.md)
 
-- [`GenericClass<T>`](MyClassLib.SubNamespace/GenericClass{T}.md)
-- [`GenericClass<T1, T2>`](MyClassLib.SubNamespace/GenericClass{T1-T2}.md)
-- [`SubClass`](MyClassLib.SubNamespace/SubClass.md)
+### MyClassLib.SubNamespace
 
-## `MyClassLib.SubNamespace.SecondarySubNamespace`
+- [`GenericClass<T>`](MyClassLib\SubNamespace\GenericClass-1.md)
+- [`GenericClass<T1, T2>`](MyClassLib\SubNamespace\GenericClass-2.md)
+- [`SubClass`](MyClassLib\SubNamespace\SubClass.md)
 
-- [`<>c`](MyClassLib.SubNamespace.SecondarySubNamespace/{}c.md)
-- [`Class2`](MyClassLib.SubNamespace.SecondarySubNamespace/Class2.md)
+### MyClassLib.SubNamespace.SecondarySubNamespace
+
+- [`Class2`](MyClassLib\SubNamespace\SecondarySubNamespace\Class2.md)
