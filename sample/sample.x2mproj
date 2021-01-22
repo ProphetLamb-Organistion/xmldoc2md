@@ -1,36 +1,20 @@
-<Project>
-    <PropertyGroup>
+﻿<Project>
+    <Properties>
         <!--Required;; The path to which the documentation will be written.-->
-        <Output Path="path\to\output\" />
+        <Output Path="..\docs\sample" />
 
-        <!--Optional; index.md; The name of the index file.-->
-        <Index Name="name_of_index.md" />
-        
+        <!--Optional; index; The name without extension of the index file.-->
+        <Index Name="documentation_for_my-class-lib" />
+
         <!--Optional;; The regex used to determine which namespaces to include in the documentation. If empty all will be included.-->
-        <NamespaceRegex>.</NamespaceRegex>
-    </PropertyGroup>
+        <NamespaceMatch>*</NamespaceMatch>
+    </Properties>
 
     <!--Required;;Target information for the assembly to process. At least one, can have multiple targets.-->
     <!--File: Required;; The filename of the assembly of the target-->
-    <Assembly File="path\to\assembly.dll">
-        <!--Optional; "${Target.Assembly.Path}${Target.Assembly.FileNameWithoutExtension}.xml"; The filename of the xml-documentationfile.-->
-        <Documentation>path\to\documentation.xml</Documentation>
-
-        <!--Optional;; A list of assembies and nugetpackages to include-->
-        <References>
-            <Assembly>path\to\external\reference\assembly.dll</Assembly>
-            <Assembly>path\to\external\references\*.dll</Assembly>
-            <Nuget>path\to\nuget_package.nupkg</Assembly>
-            <Nuget>path\to\nuget_packages\*.nupkg</Assembly>
-        </References>
-
-        <!--Optional;; Raw markdown code, that will be inculded on top of the index file, below the assembly name.-->
-        <IndexHeader># Documentation
-Must be escaped: Foo&lt;T&gt;
-        </IndexHeader>
-        <!--Or-->
+    <Assembly File="..\publish\MyClassLib.dll">
         <!--File: Optional;; File containing Markdown code, that will be inculded on top of the index file, below the assembly name.-->
-        <IndexHeader File="path\to\indexheader.md" />
+        <IndexHeader>Hello world!</IndexHeader>
     </Assembly>
 
 </Project>
