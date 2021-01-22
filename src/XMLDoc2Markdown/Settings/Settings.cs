@@ -43,15 +43,17 @@ namespace XMLDoc2Markdown
         private bool _synchronizeSettings;
 
         [field: NonSerialized]
+        private Task _writeTask = Task.CompletedTask;
+
+        [field: NonSerialized]
         public event PropertyChangedEventHandler? PropertyChanged;
 
 #endregion
 
 
 #region Properties
-
-        [field: NonSerialized]
-        public Task WriteTask { get; private set; } = Task.CompletedTask;
+        
+        public Task WriteTask => this._writeTask;
 
         public static Settings Instance => s_instance;
 
@@ -82,7 +84,7 @@ namespace XMLDoc2Markdown
                 return;
             }
 
-            this.WriteTask.Wait();
+            this._writeTask.Wait();
             this._synchronizeSettings = false;
         }
 
@@ -94,7 +96,7 @@ namespace XMLDoc2Markdown
             }
 
             this._synchronizeSettings = true;
-            this.WriteTask = Task.Run(StoreSettings);
+            this._writeTask = Task.Run(StoreSettings);
         }
 
         public Settings Clone() => new Settings {FrameworkAssemblyPaths = this.FrameworkAssemblyPaths, FrameworkAssemblyNameHashes = this.FrameworkAssemblyNameHashes};
@@ -139,7 +141,8 @@ namespace XMLDoc2Markdown
                     deserialized
                        .FrameworkAssemblyPaths
                        .Where(Directory.Exists)
-                       .SelectMany(d => Glob.Files(d, s_globDlls)),
+                       .SelectMany(d => Glob.Files(d, s_globDlls)
+                           .Select(f => Path.Combine(d, f))),
                     Console.WriteLine)
                .ToArray();
             obj = deserialized;
@@ -175,14 +178,14 @@ namespace XMLDoc2Markdown
 
             if (this._synchronizeSettings)
             {
-                this.WriteTask.Wait();
+                this._writeTask.Wait();
             }
 
             field = value;
 
             if (this._synchronizeSettings)
             {
-                this.WriteTask = Task.Run(StoreSettings);
+                this._writeTask = Task.Run(StoreSettings);
             }
 
             if (propertyName != null)

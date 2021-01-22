@@ -4,8 +4,14 @@
  */
 
 using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.Loader;
+using System.Text.RegularExpressions;
+
+using GlobExpressions;
 
 namespace XMLDoc2Markdown.AssemblyHelpers
 {
@@ -28,12 +34,81 @@ namespace XMLDoc2Markdown.AssemblyHelpers
         protected override Assembly Load(AssemblyName name)
         {
             string? assemblyPath = this._resolver.ResolveAssemblyToPath(name);
-            if (assemblyPath != null)
+            if (!string.IsNullOrWhiteSpace(assemblyPath))
+            {
+                return this.LoadFromAssemblyPath(assemblyPath);
+            }
+
+            assemblyPath = DetermineFrameworkAssemblyFilePath(name);
+            if (!string.IsNullOrWhiteSpace(assemblyPath))
             {
                 return this.LoadFromAssemblyPath(assemblyPath);
             }
 
             throw new InvalidOperationException("The assembly could not be loaded.");
+        }
+
+        private static string? DetermineFrameworkAssemblyFilePath(AssemblyName name)
+        {
+            // Try to load a framework assembly 
+            // Multiple candidates with different versions might be found
+            // Try to find candidate with same version, fallback to higher version.
+            string namePattern = $"**\\{name.Name}.dll";
+            string[] candidates = Settings.Instance.FrameworkAssemblyPaths
+               .SelectMany(p => Glob.Files(p, namePattern)
+                   .Select(f => Path.Combine(p, f)))
+               .ToArray();
+
+            if (candidates.Length == 0)
+            {
+                return null;
+            }
+            if (candidates.Length == 1)
+            {
+                return candidates[0];
+            }
+
+            Version? version = name.Version;
+            KeyValuePair<Version?, string>[] orderedCandidates = candidates
+               .Select(c => KeyValuePair.Create(LooseVersion(Path.GetFileName(Path.GetDirectoryName(c))), c))
+               .Where(kvp => kvp.Key != null)
+               .OrderBy(kvp => kvp.Key)
+               .ToArray();
+            if (orderedCandidates.Length == 0)
+            {
+                return candidates.Last();
+            }
+            if (version is null || version.Major == 0 && version.Minor == 0)
+            {
+                return orderedCandidates[0].Value;
+            }
+            string greaterVersion = orderedCandidates.FirstOrDefault(kvp => version.CompareTo(kvp.Key) <= 0).Value;
+            if (!string.IsNullOrWhiteSpace(greaterVersion))
+            {
+                return greaterVersion;
+            }
+
+            return orderedCandidates[0].Value;
+
+        }
+        
+        private static Version? LooseVersion(string? looseVersionString)
+        {
+            if (looseVersionString is null)
+            {
+                return null;
+            }
+
+            MatchCollection matches = Regex.Matches(looseVersionString, @"(\d+\.)?(\d+\.)?(\*|\d+)");
+            if (matches.Count == 0 || matches[0].Groups.Count <= 3)
+            {
+                return null;
+            }
+            
+            int major = Math.Abs(int.Parse(matches[0].Groups[1].Value.AsSpan()[0..^1]));
+            int minor = Math.Abs(int.Parse(matches[0].Groups[2].Value.AsSpan()[0..^1]));
+            int build = Math.Abs(int.Parse(matches[0].Groups[3].Value));
+            return new Version(major, minor, build);
         }
     }
 }

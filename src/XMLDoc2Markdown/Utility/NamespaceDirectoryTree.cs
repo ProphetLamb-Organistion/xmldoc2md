@@ -84,7 +84,7 @@ namespace XMLDoc2Markdown.Utility
                         }
                         else
                         {
-                            yield return KeyValuePair.Create(string.Concat(this.Value, ".", kvp.Value), string.Concat(this.Value, separator, kvp.Key));
+                            yield return KeyValuePair.Create(string.Concat(this.Value, ".", kvp.Key), string.Concat(this.Value, separator, kvp.Value));
                         }
                     }
                 }

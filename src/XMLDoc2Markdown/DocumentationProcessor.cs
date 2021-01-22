@@ -26,7 +26,7 @@ namespace XMLDoc2Markdown
         {
             Project.Project project = Configuration.Current;
 
-            TypeSymbolProvider.Instance.Add("index", outputPath, project.Properties.Index.Name);
+            TypeSymbolProvider.Instance.Add("index", ".\\", project.Properties.Index.Name);
             IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader("Index", 1);
 
             for (int index = 0; index < project.Assembly.Length; index++)
@@ -39,7 +39,7 @@ namespace XMLDoc2Markdown
                 }
             }
 
-            File.WriteAllText(TypeSymbolProvider.Instance["index"].FilePath, indexPage.ToString());
+            File.WriteAllText(Path.Combine(outputPath, TypeSymbolProvider.Instance["index"].FilePath), indexPage.ToString());
         }
 
         [STAThread]
@@ -49,15 +49,15 @@ namespace XMLDoc2Markdown
             Project.Project project = Configuration.Current;
             string assemblyFilePath = project.Assembly[assemblyIndex].File;
 
-            Func<string?, bool> namespaceFilter = _ => true;
+            Func<string?, bool> namespaceFilter = s => !string.IsNullOrEmpty(s);
             string namespaceMatch = project.Properties.NamespaceMatch;
             if (namespaceMatch.IsValidRegex())
             {
-                namespaceFilter = s => Regex.IsMatch(s, project.Properties.NamespaceMatch);
+                namespaceFilter = s => !string.IsNullOrEmpty(s) && Regex.IsMatch(s, project.Properties.NamespaceMatch);
             }
             else if (project.Properties.NamespaceMatch.IsGlobExpression())
             {
-                namespaceFilter = s => Glob.IsMatch(s, project.Properties.NamespaceMatch);
+                namespaceFilter = s => !string.IsNullOrEmpty(s) && Glob.IsMatch(s, project.Properties.NamespaceMatch);
             }
 
             // Initialize assembly load context
@@ -127,7 +127,7 @@ namespace XMLDoc2Markdown
             foreach (IGrouping<string?, TypeSymbol> typeNamespaceGrouping in TypeSymbolProvider
                .Instance
                .Select(kvp => kvp.Value)
-               .GroupBy(type => type.SymbolType.Namespace)
+               .GroupBy(type => type.SymbolType?.Namespace)
                .Where(g => namespaceFilter(g.Key))
                .OrderBy(g => g.Key))
             {

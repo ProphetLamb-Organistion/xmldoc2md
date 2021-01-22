@@ -34,9 +34,10 @@ namespace XMLDoc2Markdown
             {
                 throw new Exception();
             }
-            //args = new[] { Path.Combine(solutionRoot, @"publish\MyClassLib.dll"), Path.Combine(solutionRoot, @"docs\sample") };
-            //args[0] = @"C:\Users\Public\source\repos\GroupedObservableCollection\src\bin\Debug\netstandard2.0\GroupedObservableCollection.dll"; //@"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
-            //args[1] = Path.Combine(solutionRoot, @"docs\GOC");
+            args = new[] { Path.Combine(solutionRoot, @"docs\sample"), Path.Combine(solutionRoot, @"publish\MyClassLib.dll") };
+            //args[0] = Path.Combine(solutionRoot, @"docs\GOC");
+            //args[1] = @"C:\Users\Public\source\repos\GroupedObservableCollection\src\bin\Debug\netstandard2.0\GroupedObservableCollection.dll"; //@"C:\Users\Public\source\repos\Groundbeef\src\**\bin\**\*.dll";
+
 #endif
             var app = new CommandLineApplication {Name = "xmldoc2md"};
 
@@ -117,7 +118,7 @@ namespace XMLDoc2Markdown
             // Generate project configuration
             Project.Project project = Configuration.Create();
 
-            project.Properties = new Properties {Index = new Index {Name = namespaceMatch}, NamespaceMatch = namespaceMatch, Output = new Output {Path = @out}};
+            project.Properties = new Properties {Index = new Index {Name = indexPageName}, NamespaceMatch = namespaceMatch, Output = new Output {Path = @out}};
 
             project.Assembly = new Project.Assembly[targets.Length];
             for (int i = 0; i < targets.Length; i++)
