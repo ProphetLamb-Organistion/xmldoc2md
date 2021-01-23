@@ -53,7 +53,7 @@ namespace XMLDoc2Markdown
 
 #region Constructor
 
-        public TypeSymbol(Type type, string directory, string fileNameWithoutExtension)
+        public TypeSymbol(TypeInfo type, string directory, string fileNameWithoutExtension)
         {
             this.SymbolType = type;
             this.Directory = directory;
@@ -69,7 +69,7 @@ namespace XMLDoc2Markdown
             this.IsWellDefined = false;
         }
 
-        public TypeSymbol(Type type)
+        public TypeSymbol(TypeInfo type)
         {
             this.SymbolType = type;
             this.Directory = null!;
@@ -86,9 +86,7 @@ namespace XMLDoc2Markdown
         public string Directory { get; }
         public string FileNameWithoutExtension { get; }
         public string FilePath => Path.Combine(this.Directory, this.FileNameWithoutExtension + ".md");
-        public Type SymbolType { get; }
-
-        public TypeInfo SymbolTypeInfo => this._symbolTypeInfo ??= this.SymbolType?.GetTypeInfo() ?? throw new InvalidOperationException("SymbolType is null.");
+        public TypeInfo SymbolType { get; }
 
         public Visibility Visibility
         {
@@ -101,9 +99,9 @@ namespace XMLDoc2Markdown
 
                 return this.SymbolType.IsVisible
                     ? Visibility.Public
-                    : this.SymbolType.IsNestedPrivate || this.SymbolTypeInfo.IsNotPublic
-                        ? Visibility.Private
-                        : Visibility.None;
+                    : this.SymbolType.IsNestedPrivate || this.SymbolType.IsNotPublic
+                    ? Visibility.Private
+                    : Visibility.None;
             }
         }
 
@@ -172,15 +170,15 @@ namespace XMLDoc2Markdown
                  *   In these scenarios some declaring types (parentage) are necessary for the DisplayName.
                  */
 
-                StringBuilder sb = new StringBuilder(255);
-                List<Type> genericTypeSpecifiers = new List<Type>(this.SymbolTypeInfo.GenericTypeParameters.Length + this.SymbolTypeInfo.GenericTypeArguments.Length);
-                genericTypeSpecifiers.AddRange(this.SymbolTypeInfo.GenericTypeParameters);
-                genericTypeSpecifiers.AddRange(this.SymbolTypeInfo.GenericTypeArguments);
+                var sb = new StringBuilder(255);
+                var genericTypeSpecifiers = new List<Type>(this.SymbolType.GenericTypeParameters.Length + this.SymbolType.GenericTypeArguments.Length);
+                genericTypeSpecifiers.AddRange(this.SymbolType.GenericTypeParameters);
+                genericTypeSpecifiers.AddRange(this.SymbolType.GenericTypeArguments);
 
-                if ((this.SymbolTypeInfo.IsClass || this.SymbolTypeInfo.IsValueType) && this.SymbolTypeInfo.IsNested)
+                if ((this.SymbolType.IsClass || this.SymbolType.IsValueType) && this.SymbolType.IsNested)
                 {
                     // Remove generic type parameters already defined in declaring types.
-                    TypeInfo? parentInfo = this.SymbolTypeInfo.DeclaringType?.GetTypeInfo();
+                    TypeInfo? parentInfo = this.SymbolType.DeclaringType?.GetTypeInfo();
                     while (!(parentInfo is null) && (parentInfo.IsGenericType || parentInfo.IsGenericTypeDefinition))
                     {
                         foreach (Type p in parentInfo.GenericTypeParameters)
@@ -192,10 +190,10 @@ namespace XMLDoc2Markdown
                     }
 
                     // If not all generic type parameters are declared in the type, recursively append GetDisplayName of the declaring type, until all generic type parameters are covered.
-                    if (this.SymbolTypeInfo.GenericTypeParameters.Length + this.SymbolTypeInfo.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
+                    if (this.SymbolType.GenericTypeParameters.Length + this.SymbolType.GenericTypeArguments.Length != genericTypeSpecifiers.Count)
                     {
-                        sb.Append(this.SymbolTypeInfo.DeclaringType?.ToSymbol().DisplayName)
-                           .Append(".");
+                        sb.Append(this.SymbolType.DeclaringType?.ToSymbol().DisplayName)
+                           .Append('.');
                     }
                 }
 

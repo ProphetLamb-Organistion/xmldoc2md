@@ -252,15 +252,17 @@ namespace XMLDoc2Markdown
 
             ParameterInfo[] @params = methodBase.GetParameters();
 
-            if (@params.Length > 0)
+            if (@params.Length <= 0)
             {
-                this.document.AppendHeader("Parameters", 4);
+                return;
+            }
 
-                foreach (ParameterInfo param in @params)
-                {
-                    string? paramDoc = memberDocElement?.Elements("param").FirstOrDefault(e => e.Attribute("name")?.Value == param.Name)?.Value;
-                    this.document.AppendParagraph($"{param.Name} : {new MarkdownInlineCode(param.ParameterType.ToSymbol().SimplifiedName)}<br>{paramDoc}");
-                }
+            this.document.AppendHeader("Parameters", 4);
+
+            foreach (ParameterInfo param in @params)
+            {
+                string? paramDoc = memberDocElement?.Elements("param").FirstOrDefault(e => e.Attribute("name")?.Value == param.Name)?.Value;
+                this.document.AppendParagraph($"{param.Name} : {new MarkdownInlineCode(param.ParameterType.ToSymbol().SimplifiedName)}<br>{paramDoc}");
             }
         }
 
@@ -274,7 +276,6 @@ namespace XMLDoc2Markdown
 
                 var header = new MarkdownTableHeader(
                     new MarkdownTableHeaderCell("Name"),
-                    new MarkdownTableHeaderCell("Value", MarkdownTableTextAlignment.Right),
                     new MarkdownTableHeaderCell("Description"));
 
                 var table = new MarkdownTable(header, fields.Count());
@@ -284,7 +285,7 @@ namespace XMLDoc2Markdown
                     string? paramDoc = this.documentation.GetMember(field)?.Element("summary")?.Value;
                     if (paramDoc != null)
                     {
-                        table.AddRow(new MarkdownTableRow(field.Name, ((Enum)Enum.Parse(this.symbol.SymbolType, field.Name)).ToString("D"), paramDoc.Trim()));
+                        table.AddRow(new MarkdownTableRow(field.Name, paramDoc.Trim()));
                     }
                 }
 
@@ -296,7 +297,7 @@ namespace XMLDoc2Markdown
         {
             if (crefAttribute is null || crefAttribute.Length < 2)
             {
-                return new MarkdownInlineCode(String.Empty);
+                return new MarkdownInlineCode(string.Empty);
             }
 
             if (crefAttribute[1] != ':' || !MemberTypesAliases.TryGetMemberType(crefAttribute[0], out MemberTypes memberType))

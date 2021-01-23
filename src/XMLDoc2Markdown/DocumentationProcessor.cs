@@ -11,12 +11,8 @@ using GlobExpressions;
 
 using Markdown;
 
-using XMLDoc2Markdown.AssemblyHelpers;
 using XMLDoc2Markdown.Extensions;
-using XMLDoc2Markdown.Project;
 using XMLDoc2Markdown.Utility;
-
-using Assembly = System.Reflection.Assembly;
 
 namespace XMLDoc2Markdown
 {
@@ -24,35 +20,32 @@ namespace XMLDoc2Markdown
     {
         public static void WriteCurrentProjectConfiguration()
         {
-            using (WorkingDirectoryContext.Modulate(Path.GetDirectoryName(Configuration.ProjectFilePath)))
+            using (WorkingDirectoryContext.Modulate(Path.GetDirectoryName(Project.Configuration.ProjectFilePath)))
             {
-                EnsureDirectory(Configuration.Current.Properties.Output.Path);
+                EnsureDirectory(Project.Configuration.Current.Properties.Output.Path);
 
-                Project.Project project = Configuration.Current;
+                Project.Project project = Project.Configuration.Current;
 
                 TypeSymbolProvider.Instance.Add("index", ".\\", project.Properties.Index.Name);
                 IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader("Index", 1);
 
+                var resolver = new BroadPathAssemblyResolver(project.Assembly.Select(a => a.File));
+
                 for (int index = 0; index < project.Assembly.Length; index++)
                 {
-                    ProcessAssembly(index, indexPage, out WeakReference alcWeakReference);
-                    for (int i = 0; alcWeakReference.IsAlive && i < 128; i++)
-                    {
-                        GC.Collect();
-                        GC.WaitForPendingFinalizers();
-                    }
+                    ProcessAssembly(index, indexPage, resolver);
                 }
 
                 File.WriteAllText(
-                    Path.Combine(Configuration.Current.Properties.Output.Path, TypeSymbolProvider.Instance["index"].FilePath),
+                    Path.Combine(Project.Configuration.Current.Properties.Output.Path, TypeSymbolProvider.Instance["index"].FilePath),
                     indexPage.ToString());
             }
         }
 
         [MethodImpl(MethodImplOptions.NoInlining)]
-        private static void ProcessAssembly(int assemblyIndex, IMarkdownDocument indexPage, out WeakReference loadContextWeakReference)
+        private static void ProcessAssembly(int assemblyIndex, IMarkdownDocument indexPage, PathAssemblyResolver resolver)
         {
-            Project.Project project = Configuration.Current;
+            Project.Project project = Project.Configuration.Current;
             string assemblyFilePath = Path.GetFullPath(project.Assembly[assemblyIndex].File);
             
             Func<string?, bool> namespaceFilter = s => !string.IsNullOrEmpty(s);
@@ -67,8 +60,7 @@ namespace XMLDoc2Markdown
             }
 
             // Initialize assembly load context
-            var assemblyLoadContext = new HostAssemblyLoadContext(assemblyFilePath);
-            loadContextWeakReference = new WeakReference(assemblyLoadContext);
+            using var assemblyLoadContext = new MetadataLoadContext(resolver);
 
             CopyAssemblyReferences(project.Assembly[assemblyIndex]);
 
@@ -80,7 +72,7 @@ namespace XMLDoc2Markdown
 
             // Append header to index page
             indexPage.AppendHeader("Assembly - " + assembly.GetName().Name, 2);
-            IndexHeader headerInfo = project.Assembly[assemblyIndex].IndexHeader;
+            Project.IndexHeader headerInfo = project.Assembly[assemblyIndex].IndexHeader;
             IMarkdownBlockElement? headerContent = null;
             if (File.Exists(headerInfo.File))
             {
@@ -93,7 +85,9 @@ namespace XMLDoc2Markdown
             indexPage.Append(headerContent);
 
             // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
-            TypeSymbolProvider.Instance.Add(LoadAssemblyTypes(assembly).Where(t => t.GetCustomAttribute<CompilerGeneratedAttribute>() is null && t.Namespace != null));
+            TypeSymbolProvider.Instance.Add(LoadAssemblyTypes(assembly)
+               .Where(t => t.GetCustomAttributesData().FirstOrDefault(a => a.AttributeType == typeof(CompilerGeneratedAttribute)) is null && t.Namespace != null)
+               .Select(t => t.GetTypeInfo()));
 
             foreach (IGrouping<string?, TypeSymbol> typeNamespaceGrouping in TypeSymbolProvider
                .Instance
@@ -106,11 +100,8 @@ namespace XMLDoc2Markdown
                 EnsureDirectory(documentationDir);
 
                 indexPage.AppendHeader(typeNamespaceGrouping.Key, 3);
-                indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping!, Configuration.Current.Properties.Output.Path, documentation, assembly));
+                indexPage.Append(ProcessAssemblyNamespace(typeNamespaceGrouping!, Project.Configuration.Current.Properties.Output.Path, documentation, assembly));
             }
-
-            // Unload assembly
-            assemblyLoadContext.Unload();
         }
 
         private static Type[] LoadAssemblyTypes(Assembly assembly)
@@ -123,7 +114,7 @@ namespace XMLDoc2Markdown
             }
             catch (ReflectionTypeLoadException ex)
             {
-                StringBuilder sb = new StringBuilder(1000);
+                var sb = new StringBuilder(1000);
                 sb.AppendLine("ReflectionTypeLoadException: Occurs when dynamically linked assemblies cannot be loaded, they have to be imported manually. For more info see: https://natemcmaster.com/blog/2017/12/21/netcore-primitives/#depsjson and https://docs.microsoft.com/en-us/dotnet/core/dependency-loading/default-probing");
                 if (!(ex.LoaderExceptions is null))
                 {

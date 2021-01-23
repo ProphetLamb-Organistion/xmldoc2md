@@ -5,14 +5,14 @@ Namespace: MyClassLib.SubNamespace
 Generic class.
 
 ```csharp
-public class GenericClass<T>
+public class GenericClass<T> : System.Object
 ```
 
 #### Type Parameters
 
 `T`<br>The type param.
 
-Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [GenericClass&lt;T&gt;](GenericClass-1.md)
+Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [GenericClass&lt;T&gt;](GenericClass-1.md)
 
 ## Constructors
 

@@ -19,4 +19,5 @@
 
 ### MyClassLib.SubNamespace.SecondarySubNamespace
 
+- [`<>c`](MyClassLib\SubNamespace\SecondarySubNamespace\{}c.md)
 - [`Class2`](MyClassLib\SubNamespace\SecondarySubNamespace\Class2.md)

@@ -5,10 +5,10 @@ Namespace: MyClassLib
 My class.
 
 ```csharp
-public class MyClass : IMyInterface
+public class MyClass : System.Object, IMyInterface
 ```
 
-Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyClass](MyClass.md)
+Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyClass](MyClass.md)
 
 Implements [IMyInterface](IMyInterface.md)
 
@@ -19,12 +19,12 @@ Implements [IMyInterface](IMyInterface.md)
 My property ([string](https://docs.microsoft.com/en-us/dotnet/api/system.string)).
 
 ```csharp
-public string MyProperty { get; protected set; }
+public String MyProperty { get; protected set; }
 ```
 
 > #### Property Value
 > 
-> `string`<br>The property value.
+> `String`<br>The property value.
 > 
 
 ### MyEnum
@@ -54,59 +54,63 @@ public MyClass()
 
 > 
 
-### MyClass(string, int)
+### MyClass(String, Int32)
 
 Initializes a new instance of the [MyClass](MyClass.md) class.
 
 ```csharp
-public MyClass(string firstParam, int secondParam)
+public MyClass(String firstParam, Int32 secondParam)
 ```
 
 > #### Parameters
 > 
-> firstParam : `string`<br>The first param.
+> firstParam : `String`<br>The first param.
 > 
-> secondParam : `int`<br>The second param.
+> secondParam : `Int32`<br>The second param.
 > 
 
 ---
 
 ## Methods
 
-### Do(string, int)
+### Do(String, Int32)
 
 Do some thing.
 
 ```csharp
-public void Do(string firstParam, int secondParam)
+public Void Do(String firstParam, Int32 secondParam)
 ```
 
 > #### Parameters
 > 
-> firstParam : `string`<br>The first param.
+> firstParam : `String`<br>The first param.
 > 
-> secondParam : `int`<br>The second param.
+> secondParam : `Int32`<br>The second param.
+> 
+> #### Returns
+> 
+> Void<br>
 > 
 
 #### Exceptions
 
 Exception<br>Thrown when...
 
-### Get(string)
+### Get(String)
 
 Gets some thing.
 
 ```csharp
-public string Get(string param)
+public String Get(String param)
 ```
 
 > #### Parameters
 > 
-> param : `string`<br>The param.
+> param : `String`<br>The param.
 > 
 > #### Returns
 > 
-> string<br>An empty string.
+> String<br>An empty string.
 > 
 
 #### Exceptions
@@ -118,9 +122,12 @@ Exception<br>Thrown when...
 A static method.
 
 ```csharp
-public static void StaticMethod()
+public static Void StaticMethod()
 ```
 
+> #### Returns
+> 
+> Void<br>
 > 
 
 ---

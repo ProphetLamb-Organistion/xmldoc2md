@@ -5,10 +5,10 @@ Namespace: MyClassLib
 My abstract class.
 
 ```csharp
-public abstract class MyAbstractClass
+public abstract class MyAbstractClass : System.Object
 ```
 
-Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyAbstractClass](MyAbstractClass.md)
+Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyAbstractClass](MyAbstractClass.md)
 
 ## Properties
 
@@ -17,12 +17,12 @@ Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) 
 My abstract property.
 
 ```csharp
-public abstract int MyProperty { get; set; }
+public abstract Int32 MyProperty { get; set; }
 ```
 
 > #### Property Value
 > 
-> `int`<br>The property value.
+> `Int32`<br>The property value.
 > 
 
 ---
@@ -34,26 +34,29 @@ public abstract int MyProperty { get; set; }
 Do something.
 
 ```csharp
-public abstract void Do()
+public abstract Void Do()
 ```
 
+> #### Returns
+> 
+> Void<br>
 > 
 
-### Get(string)
+### Get(String)
 
 Gets something.
 
 ```csharp
-protected string Get(string param)
+protected String Get(String param)
 ```
 
 > #### Parameters
 > 
-> param : `string`<br>The param.
+> param : `String`<br>The param.
 > 
 > #### Returns
 > 
-> string<br>A string.
+> String<br>A string.
 > 
 
 ---

@@ -10,36 +10,40 @@ public interface IMyInterface
 
 ## Methods
 
-### Do(string, int)
+### Do(String, Int32)
 
 Do some thing.
 
 ```csharp
-void Do(string firstParam, int secondParam)
+Void Do(String firstParam, Int32 secondParam)
 ```
 
 > #### Parameters
 > 
-> firstParam : `string`<br>The first param.
+> firstParam : `String`<br>The first param.
 > 
-> secondParam : `int`<br>The second param.
+> secondParam : `Int32`<br>The second param.
+> 
+> #### Returns
+> 
+> Void<br>
 > 
 
-### Get(string)
+### Get(String)
 
 Gets some thing.
 
 ```csharp
-string Get(string param)
+String Get(String param)
 ```
 
 > #### Parameters
 > 
-> param : `string`<br>The param.
+> param : `String`<br>The param.
 > 
 > #### Returns
 > 
-> string<br>An empty string.
+> String<br>An empty string.
 > 
 
 ---

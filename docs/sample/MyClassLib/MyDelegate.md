@@ -6,7 +6,7 @@ Namespace: MyClassLib
 public sealed class MyDelegate : System.MulticastDelegate
 ```
 
-Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [Delegate](https://docs.microsoft.com/en-us/dotnet/api/system.delegate) → [MulticastDelegate](https://docs.microsoft.com/en-us/dotnet/api/system.multicastdelegate) → [MyDelegate](MyDelegate.md)
+Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [Delegate](https://docs.microsoft.com/en-us/dotnet/api/system.delegate) → [MulticastDelegate](https://docs.microsoft.com/en-us/dotnet/api/system.multicastdelegate) → [MyDelegate](MyDelegate.md)
 
 Implements [ICloneable](https://docs.microsoft.com/en-us/dotnet/api/system.icloneable), [ISerializable](https://docs.microsoft.com/en-us/dotnet/api/system.runtime.serialization.iserializable)
 
@@ -15,12 +15,12 @@ Implements [ICloneable](https://docs.microsoft.com/en-us/dotnet/api/system.iclon
 ### Target
 
 ```csharp
-public object Target { get; }
+public Object Target { get; }
 ```
 
 > #### Property Value
 > 
-> `object`<br>
+> `Object`<br>
 > 
 
 ### Method
@@ -38,15 +38,15 @@ public MethodInfo Method { get; }
 
 ## Constructors
 
-### MyDelegate(object, IntPtr)
+### MyDelegate(Object, IntPtr)
 
 ```csharp
-public MyDelegate(object object, IntPtr method)
+public MyDelegate(Object object, IntPtr method)
 ```
 
 > #### Parameters
 > 
-> object : `object`<br>
+> object : `Object`<br>
 > 
 > method : `IntPtr`<br>
 > 
@@ -55,30 +55,34 @@ public MyDelegate(object object, IntPtr method)
 
 ## Methods
 
-### Invoke(string)
+### Invoke(String)
 
 ```csharp
-public void Invoke(string str)
+public Void Invoke(String str)
 ```
 
 > #### Parameters
 > 
-> str : `string`<br>
+> str : `String`<br>
+> 
+> #### Returns
+> 
+> Void<br>
 > 
 
-### BeginInvoke(string, AsyncCallback, object)
+### BeginInvoke(String, AsyncCallback, Object)
 
 ```csharp
-public IAsyncResult BeginInvoke(string str, AsyncCallback callback, object object)
+public IAsyncResult BeginInvoke(String str, AsyncCallback callback, Object object)
 ```
 
 > #### Parameters
 > 
-> str : `string`<br>
+> str : `String`<br>
 > 
 > callback : `AsyncCallback`<br>
 > 
-> object : `object`<br>
+> object : `Object`<br>
 > 
 > #### Returns
 > 
@@ -88,12 +92,16 @@ public IAsyncResult BeginInvoke(string str, AsyncCallback callback, object objec
 ### EndInvoke(IAsyncResult)
 
 ```csharp
-public void EndInvoke(IAsyncResult result)
+public Void EndInvoke(IAsyncResult result)
 ```
 
 > #### Parameters
 > 
 > result : `IAsyncResult`<br>
+> 
+> #### Returns
+> 
+> Void<br>
 > 
 
 ---

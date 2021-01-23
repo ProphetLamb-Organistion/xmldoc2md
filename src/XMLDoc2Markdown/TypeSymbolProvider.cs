@@ -1,8 +1,9 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
+using System.Reflection;
 
 using XMLDoc2Markdown.Extensions;
 using XMLDoc2Markdown.Utility;
@@ -33,22 +34,17 @@ namespace XMLDoc2Markdown
 
 #region Public members
 
-        public void Add(IEnumerable<Type> types)
+        public void Add(IEnumerable<TypeInfo> types)
         {
-            IList<Type> typeList = types.ToList();
             IDictionary<string, string> typeNamespaceToPathMap = new Dictionary<string, string>();
             // Namespace directory structure
-            foreach ((string nspc, string dir) in new NamespaceDirectoryTree(typeList.Where(t => t.Namespace != null).Select(t => t.Namespace!)))
+            foreach ((string nspc, string dir) in new NamespaceDirectoryTree(types.Where(t => t.Namespace != null).Select(t => t.Namespace!)))
             {
                 typeNamespaceToPathMap.TryAdd(nspc, dir);
             }
 
-            //foreach ((string[] key, char[] value) in this.NamespacesToDirectoryStructure(typeList.Select(t => t.Namespace!.Split("."))))
-            //{
-            //    typeNamespaceToPathMap.TryAdd(string.Join('.', key), new string(value));
-            //}
             // TypeSymbols
-            foreach (KeyValuePair<string, TypeSymbol> keyValuePair in typeList
+            foreach (KeyValuePair<string, TypeSymbol> keyValuePair in types
                .Select(x => KeyValuePair.Create(x.GetTypeSymbolIdentifier(), new TypeSymbol(x, typeNamespaceToPathMap[x.Namespace!], StringExtensions.MakeTypeNameFileNameSafe(x.Name)))))
             {
                 this._symbolProvider.Add(keyValuePair);

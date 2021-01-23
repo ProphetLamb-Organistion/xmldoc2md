@@ -8,7 +8,7 @@ Sub class from [MyClass](..\MyClass.md)
 public class SubClass : MyClassLib.MyClass
 ```
 
-Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyClass](..\MyClass.md) → [SubClass](SubClass.md)
+Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [MyClass](..\MyClass.md) → [SubClass](SubClass.md)
 
 Implements [IMyInterface](..\IMyInterface.md)
 
@@ -19,12 +19,12 @@ Implements [IMyInterface](..\IMyInterface.md)
 My property ([string](https://docs.microsoft.com/en-us/dotnet/api/system.string)).
 
 ```csharp
-public string MyProperty { get; protected set; }
+public String MyProperty { get; protected set; }
 ```
 
 > #### Property Value
 > 
-> `string`<br>The property value.
+> `String`<br>The property value.
 > 
 
 ### MyEnum
@@ -61,12 +61,12 @@ public SubClass()
 Convert instance to string.
 
 ```csharp
-public string ToString()
+public String ToString()
 ```
 
 > #### Returns
 > 
-> string<br>A string.
+> String<br>A string.
 > 
 
 ---

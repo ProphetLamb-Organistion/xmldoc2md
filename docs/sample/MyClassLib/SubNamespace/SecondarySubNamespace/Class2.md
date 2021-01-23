@@ -5,10 +5,10 @@ Namespace: MyClassLib.SubNamespace.SecondarySubNamespace
 Class3
 
 ```csharp
-public class Class2
+public class Class2 : System.Object
 ```
 
-Inheritance [object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [Class2](Class2.md)
+Inheritance [Object](https://docs.microsoft.com/en-us/dotnet/api/system.object) → [Class2](Class2.md)
 
 ## Properties
 

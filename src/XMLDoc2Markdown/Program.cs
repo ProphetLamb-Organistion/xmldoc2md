@@ -8,10 +8,6 @@ using System.Xml.Schema;
 using Microsoft.Extensions.CommandLineUtils;
 
 using XMLDoc2Markdown.Extensions;
-using XMLDoc2Markdown.Project;
-
-using Assembly = System.Reflection.Assembly;
-using Index = XMLDoc2Markdown.Project.Index;
 
 namespace XMLDoc2Markdown
 {
@@ -117,14 +113,14 @@ namespace XMLDoc2Markdown
             string[] targets = src.GetGlobFiles().ToArray();
 
             // Generate project configuration
-            Project.Project project = Configuration.Create(Path.Combine(Environment.CurrentDirectory, "__dummy.x2mproj"));
+            Project.Project project = Project.Configuration.Create(Path.Combine(Environment.CurrentDirectory, "__dummy.x2mproj"));
 
-            project.Properties = new Properties {Index = new Index {Name = indexPageName}, NamespaceMatch = namespaceMatch, Output = new Output {Path = @out}};
+            project.Properties = new Project.Properties {Index = new Project.Index {Name = indexPageName}, NamespaceMatch = namespaceMatch, Output = new Project.Output {Path = @out}};
 
             project.Assembly = new Project.Assembly[targets.Length];
             for (int i = 0; i < targets.Length; i++)
             {
-                project.Assembly[i] = new Project.Assembly {Documentation = null, File = targets[i], IndexHeader = new IndexHeader {File = null, Text = null}, References = null};
+                project.Assembly[i] = new Project.Assembly {Documentation = null, File = targets[i], IndexHeader = new Project.IndexHeader {File = null, Text = null}, References = null};
             }
 
             DocumentationProcessor.WriteCurrentProjectConfiguration();
@@ -142,7 +138,7 @@ namespace XMLDoc2Markdown
             // Prepare project configuration
             try
             {
-                Configuration.Load(projectFilePath);
+                Project.Configuration.Load(projectFilePath);
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -155,7 +151,7 @@ namespace XMLDoc2Markdown
                 return -1;
             }
 
-            if (!Configuration.IsLoaded)
+            if (!Project.Configuration.IsLoaded)
             {
                 Console.WriteLine("The project could no be loaded correctly.");
                 return -1;
@@ -165,7 +161,7 @@ namespace XMLDoc2Markdown
             if (!string.IsNullOrWhiteSpace(@out))
             {
                 EnsureDirectory(@out);
-                Configuration.Current.Properties.Output.Path = @out;
+                Project.Configuration.Current.Properties.Output.Path = @out;
             }
             
             DocumentationProcessor.WriteCurrentProjectConfiguration();
