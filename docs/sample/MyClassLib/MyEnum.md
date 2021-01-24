@@ -20,4 +20,4 @@ Implements [IComparable](https://docs.microsoft.com/en-us/dotnet/api/system.icom
 | First | The first. |
 | Second | The second. |
 
-[`< Index`](..\index.md)
+[`< Index`](..\documentation_for_my-class-lib.md)

@@ -52,4 +52,4 @@ public Class2()
 
 ---
 
-[`< Index`](..\..\..\index.md)
+[`< Index`](..\..\..\documentation_for_my-class-lib.md)

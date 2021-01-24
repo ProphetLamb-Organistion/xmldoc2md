@@ -35,4 +35,4 @@ internal MyClass <.cctor>b__6_0()
 
 ---
 
-[`< Index`](..\..\..\index.md)
+[`< Index`](..\..\..\documentation_for_my-class-lib.md)

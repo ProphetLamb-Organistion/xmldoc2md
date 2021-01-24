@@ -83,4 +83,4 @@ public event EventHandler<EventArgs> MyEvent;
 
 ---
 
-[`< Index`](..\..\index.md)
+[`< Index`](..\..\documentation_for_my-class-lib.md)
