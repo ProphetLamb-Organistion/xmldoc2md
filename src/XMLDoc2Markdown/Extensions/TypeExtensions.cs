@@ -218,7 +218,7 @@ namespace XMLDoc2Markdown.Extensions
             return new MarkdownLink(type.GetDisplayName().FormatChevrons(), url);
         }
 
-        public static TypeSymbol ToSymbol(this Type type) => TypeSymbolProvider.Instance.TryGetValue(type.GetTypeSymbolIdentifier(), out TypeSymbol? symbol) ? symbol : new TypeSymbol(type.GetTypeInfo());
+        public static TypeSymbol ToSymbol(this Type type) => TypeSymbolResolver.Instance.TryGetValue(type.GetTypeSymbolIdentifier(), out TypeSymbol? symbol) ? symbol : new TypeSymbol(type.GetTypeInfo());
 
         public static string GetTypeSymbolIdentifier(this Type type) => String.Concat(type.Namespace, ".", type.Name.Replace('`', '-'));
     }

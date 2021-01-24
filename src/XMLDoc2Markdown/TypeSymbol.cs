@@ -17,7 +17,6 @@ namespace XMLDoc2Markdown
     {
 #region Fields
 
-        private TypeInfo? _symbolTypeInfo;
         private string? _simplifiedName;
         private string? _displayName;
         private string? _signaturePostfix;
@@ -315,7 +314,7 @@ namespace XMLDoc2Markdown
                 throw new InvalidOperationException("SymbolType is null.");
             }
 
-            if (!this.SymbolType.Assembly.IsSystemAssembly())
+            if (!this.SymbolType.Assembly.IsFrameworkAssembly())
             {
                 throw new InvalidOperationException($"'{this.SymbolType.FullName}' is not a system assembly.");
             }
@@ -350,7 +349,7 @@ namespace XMLDoc2Markdown
 
         public MarkdownLink GetDocsLink(TypeSymbol? relativeTo = null)
         {
-            string url = this.SymbolType.Assembly.IsSystemAssembly()
+            string url = this.SymbolType.Assembly.IsFrameworkAssembly()
                 ? this.MsDocsUrl()
                 : this.GetInternalDocsUrl(relativeTo);
 

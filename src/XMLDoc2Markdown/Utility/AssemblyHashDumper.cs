@@ -17,20 +17,16 @@ namespace XMLDoc2Markdown.Utility
             foreach (string fullFileName in assemblyFileNames.Distinct(FileNameEqualityComparer.Instance))
             {
                 string? name = null;
-                try
+
+                using (FileStream sr = File.OpenRead(fullFileName))
                 {
-                    using FileStream sr = File.OpenRead(fullFileName);
-                    PEReader reader = new PEReader(sr);
+                    var reader = new PEReader(sr);
                     if (reader.HasMetadata)
                     {
                         MetadataReader metadataReader = reader.GetMetadataReader();
                         StringHandle nameHandle = metadataReader.GetModuleDefinition().Name;
-                        name = Path.GetFileNameWithoutExtension(metadataReader.GetString(nameHandle))?.ToLowerInvariant();
+                        name = Path.GetFileNameWithoutExtension(metadataReader.GetString(nameHandle)).ToLowerInvariant();
                     }
-                }
-                catch (Exception ex)
-                {
-                    exceptionHandle($"Could not read metadata of assembly '{fullFileName}'. " + ex.ToLog());
                 }
 
                 if (name != null)
@@ -61,7 +57,7 @@ namespace XMLDoc2Markdown.Utility
             private static readonly Lazy<FileNameEqualityComparer> s_instance = new Lazy<FileNameEqualityComparer>(() => new FileNameEqualityComparer());
             public static FileNameEqualityComparer Instance => s_instance.Value;
 
-            public bool Equals(string x, string y) => Path.GetFileNameWithoutExtension(x).Equals(Path.GetFileNameWithoutExtension(y), StringComparison.Ordinal);
+            public bool Equals(string? x, string? y) => Path.GetFileNameWithoutExtension(x)!.Equals(Path.GetFileNameWithoutExtension(y), StringComparison.Ordinal);
 
             public int GetHashCode([DisallowNull] string obj) => Path.GetFileNameWithoutExtension(obj).GetHashCode();
         }

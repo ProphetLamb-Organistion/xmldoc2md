@@ -64,7 +64,7 @@ namespace XMLDoc2Markdown
                 this.WriteEnumFields(type.GetFields().Where(m => !m.IsSpecialName));
             }
 
-            this.document.AppendParagraph(new MarkdownLink("`< Index`", TypeSymbolProvider.Instance["index"].GetInternalDocsUrl(this.symbol)));
+            this.document.AppendParagraph(new MarkdownLink("`< Index`", TypeSymbolResolver.Instance["index"].GetInternalDocsUrl(this.symbol)));
 
             return this.document.ToString();
         }

@@ -10,7 +10,7 @@ namespace XMLDoc2Markdown.Extensions
     {
         internal static IEnumerable<string?> GetDeclaredNamespaces(this Assembly assembly) => assembly.GetTypes().Select(type => type.Namespace).Distinct();
 
-        public static bool IsSystemAssembly(this Assembly assembly)
+        public static bool IsFrameworkAssembly(this Assembly assembly)
         {
             string? name = assembly.GetName().Name?.ToLowerInvariant();
             // Checking against typeof(string).Assembly is insufficient for many types e.g. PresentationCore types. Instead check that the assembly name hash against .Net Core/Framework assemblies

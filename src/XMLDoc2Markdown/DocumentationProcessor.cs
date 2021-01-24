@@ -6,6 +6,7 @@ using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 
 using GlobExpressions;
 
@@ -26,18 +27,18 @@ namespace XMLDoc2Markdown
 
                 Project.Project project = Project.Configuration.Current;
 
-                TypeSymbolProvider.Instance.Add("index", ".\\", project.Properties.Index.Name);
+                TypeSymbolResolver.Instance.Add("index", ".\\", project.Properties.Index.Name);
                 IMarkdownDocument indexPage = new MarkdownDocument().AppendHeader("Index", 1);
 
                 var resolver = new BroadPathAssemblyResolver(project.Assembly.Select(a => a.File));
 
-                for (int index = 0; index < project.Assembly.Length; index++)
+                Parallel.For(0, project.Assembly.Length, index =>
                 {
                     ProcessAssembly(index, indexPage, resolver);
-                }
+                });
 
                 File.WriteAllText(
-                    Path.Combine(Project.Configuration.Current.Properties.Output.Path, TypeSymbolProvider.Instance["index"].FilePath),
+                    Path.Combine(Project.Configuration.Current.Properties.Output.Path, TypeSymbolResolver.Instance["index"].FilePath),
                     indexPage.ToString());
             }
         }
@@ -85,11 +86,11 @@ namespace XMLDoc2Markdown
             indexPage.Append(headerContent);
 
             // Filter CompilerGenerated classes such as "<>c__DisplayClass"s, or things spawned by Source Generators
-            TypeSymbolProvider.Instance.Add(LoadAssemblyTypes(assembly)
+            TypeSymbolResolver.Instance.Add(LoadAssemblyTypes(assembly)
                .Where(t => t.GetCustomAttributesData().FirstOrDefault(a => a.AttributeType == typeof(CompilerGeneratedAttribute)) is null && t.Namespace != null)
                .Select(t => t.GetTypeInfo()));
 
-            foreach (IGrouping<string?, TypeSymbol> typeNamespaceGrouping in TypeSymbolProvider
+            foreach (IGrouping<string?, TypeSymbol> typeNamespaceGrouping in TypeSymbolResolver
                .Instance
                .Select(kvp => kvp.Value)
                .GroupBy(type => type.SymbolType?.Namespace)
