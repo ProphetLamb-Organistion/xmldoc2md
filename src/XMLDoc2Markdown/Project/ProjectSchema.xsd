@@ -4,17 +4,17 @@
     <xs:element name="Project">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="Properties" />
-                <xs:element maxOccurs="unbounded" ref="Assembly" />
+                <xs:element minOccurs="0" maxOccurs="1" ref="Properties" />
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="Assembly" />
             </xs:sequence>
         </xs:complexType>
     </xs:element>
     <xs:element name="Properties">
         <xs:complexType>
             <xs:sequence>
-                <xs:element ref="Output" />
-                <xs:element ref="Index" />
-                <xs:element ref="NamespaceMatch" />
+                <xs:element minOccurs="0" maxOccurs="1" ref="Output" />
+                <xs:element minOccurs="0" maxOccurs="1" ref="Index" />
+                <xs:element minOccurs="0" maxOccurs="1" ref="NamespaceMatch" />
             </xs:sequence>
         </xs:complexType>
     </xs:element>
@@ -28,7 +28,7 @@
             <xs:attribute name="Name" use="required" type="xs:NCName" />
         </xs:complexType>
     </xs:element>
-    <xs:element name="NamespaceMatch" type="xs:string" />
+    <xs:element name="NamespaceMatch" type="xs:string"/>
     <xs:element name="Assembly">
         <xs:complexType>
             <xs:sequence>
@@ -45,8 +45,8 @@
     <xs:element name="References">
         <xs:complexType>
             <xs:sequence>
-                <xs:element maxOccurs="unbounded" ref="AssemblyReference" />
-                <xs:element maxOccurs="unbounded" ref="NugetReference" />
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="AssemblyReference" />
+                <xs:element minOccurs="0" maxOccurs="unbounded" ref="NugetReference" />
             </xs:sequence>
         </xs:complexType>
     </xs:element>

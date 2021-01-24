@@ -46,8 +46,27 @@ namespace XMLDoc2Markdown.Project
 
         public static bool IsLoaded => s_current != null;
 
+        public static Project? Load(Project project, string filePath)
+        {
+            if (s_current != null)
+            {
+                throw new InvalidOperationException("A configuration is already loaded. Unload the configuration first.");
+            }
+
+            s_current = project;
+            s_filePath = filePath;
+
+            ValidateCurrent();
+
+            return s_current;
+        }
+
         public static Project? Load(string filePath)
         {
+            if (s_current != null)
+            {
+                throw new InvalidOperationException("A configuration is already loaded. Unload the configuration first.");
+            }
             if (!File.Exists(filePath))
             {
                 throw new ArgumentException("The file could not be found. " + filePath);
@@ -55,8 +74,7 @@ namespace XMLDoc2Markdown.Project
 
             try
             {
-                using var fs = new FileStream(filePath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
-                using var sr = new StreamReader(fs, Encoding.UTF8);
+                using var sr = new StreamReader(File.OpenRead(filePath), Encoding.UTF8);
 
                 // Validate schema
                 XmlSchemaSet schema = new XmlSchemaSet();
@@ -94,7 +112,7 @@ namespace XMLDoc2Markdown.Project
             s_filePath = null;
         }
 
-        public static void Store(string fileName)
+        public static void Store()
         {
             if (s_current is null)
             {
@@ -103,8 +121,7 @@ namespace XMLDoc2Markdown.Project
 
             lock (s_current)
             {
-                using var fs = new FileStream(fileName, FileMode.Open, FileAccess.Write, FileShare.ReadWrite);
-                using var sr = new StreamWriter(fs, Encoding.UTF8);
+                using var sr = new StreamWriter(File.OpenWrite(s_filePath!), Encoding.UTF8);
                 XmlSerializer xs = new XmlSerializer(typeof(Project));
                 xs.Serialize(sr, s_current);
             }
@@ -180,15 +197,27 @@ namespace XMLDoc2Markdown.Project
 
                     if (assembly.References != null)
                     {
-                        int j = 0;
-                        foreach (string reference in assembly.References.AssemblyReference.Concat(assembly.References.NugetReference))
+                        if (assembly.References.AssemblyReference != null)
                         {
-                            if (!File.Exists(reference))
+                            for (int j = 0; j < assembly.References.AssemblyReference.Length; j++)
                             {
-                                throw new XmlSchemaValidationException($"Invalid filename for reference #{j} in assembly #{i}. '{reference}'");
+                                string reference = assembly.References.AssemblyReference[j];
+                                if (!File.Exists(reference))
+                                {
+                                    throw new XmlSchemaValidationException($"Invalid filename for assembly-reference #{j} in assembly #{i}. '{reference}'");
+                                }
                             }
-
-                            j++;
+                        }
+                        if (assembly.References.NugetReference != null)
+                        {
+                            for (int j = 0; j < assembly.References.NugetReference.Length; j++)
+                            {
+                                string reference = assembly.References.NugetReference[j];
+                                if (!File.Exists(reference))
+                                {
+                                    throw new XmlSchemaValidationException($"Invalid filename for nuget-reference #{j} in assembly #{i}. '{reference}'");
+                                }
+                            }
                         }
                     }
                 }
