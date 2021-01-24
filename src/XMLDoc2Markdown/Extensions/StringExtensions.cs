@@ -9,6 +9,14 @@ using GlobExpressions;
 
 namespace XMLDoc2Markdown.Extensions
 {
+    [Flags]
+    public enum FileType
+    {
+        FileOrDirectory = 3,
+        File = 1,
+        Directory = 2
+    }
+
     internal static class StringExtensions
     {
         private static readonly string[] s_formatChevrons_oldValues = {"<", ">"};
@@ -71,15 +79,15 @@ namespace XMLDoc2Markdown.Extensions
             return true;
         }
 
-
         /// <summary>
         /// Returns the full file path and names of all files, that fulfill the glob pattern.
         /// </summary>
         /// <param name="globFilePath">The glob file pattern.</param>
+        /// <param name="type">The type of the file target.</param>
         /// <returns>An enumerable sequence of full file path and names that fulfill the glob pattern.</returns>
-        public static IEnumerable<string> GetGlobFiles(this string globFilePath)
+        public static IEnumerable<string> GetGlobFiles(this string globFilePath, FileType type = FileType.File)
         {
-            IEnumerable<string> results = GetGlobFiles(globFilePath, out string? directory);
+            IEnumerable<string> results = GetGlobFiles(globFilePath, out string? directory, type);
             if (directory is null)
             {
                 return Enumerable.Empty<string>();
@@ -93,23 +101,42 @@ namespace XMLDoc2Markdown.Extensions
         /// </summary>
         /// <param name="globFilePath">The glob file pattern.</param>
         /// <param name="sharedRootDirectory">The directory that all files that fulfill the glob pattern share.</param>
+        /// <para name="type">The type of the file target.</para>
         /// <returns>An enumerable sequence of file path and names relative to the shared root, of all files, that fulfill the glob pattern.</returns>
-        public static IEnumerable<string> GetGlobFiles(this string globFilePath, out string? sharedRootDirectory)
+        public static IEnumerable<string> GetGlobFiles(this string globFilePath, out string? sharedRootDirectory, FileType type = FileType.File)
         {
             if (!Path.IsPathRooted(globFilePath))
             {
                 sharedRootDirectory = Environment.CurrentDirectory;
-                return Glob.Files(Environment.CurrentDirectory, globFilePath);
+                return type switch
+                {
+                    FileType.File => Glob.Files(Environment.CurrentDirectory, globFilePath),
+                    FileType.Directory => Glob.Directories(Environment.CurrentDirectory, globFilePath),
+                    FileType.FileOrDirectory => Glob.FilesAndDirectories(Environment.CurrentDirectory, globFilePath),
+                    _ => throw new ArgumentOutOfRangeException(nameof(type))
+                };
             }
 
             // Rooted path, begins with C: etc.
             if (globFilePath.IndexOfAny(s_globWildcards) == -1)
             {
-                var fi = new FileInfo(globFilePath);
-                if (fi.Exists)
+                if ((type & FileType.File) != 0)
                 {
-                    sharedRootDirectory = fi.DirectoryName!;
-                    return new [] {fi.Name};
+                    var fi = new FileInfo(globFilePath);
+                    if (fi.Exists)
+                    {
+                        sharedRootDirectory = fi.DirectoryName!;
+                        return new [] {fi.Name};
+                    }
+                }
+                if ((type & FileType.Directory) != 0)
+                {
+                    var di = new DirectoryInfo(globFilePath);
+                    if (di.Exists)
+                    {
+                        sharedRootDirectory = di.Parent!.FullName;
+                        return new [] {di.Name};
+                    }
                 }
 
                 sharedRootDirectory = null;
@@ -121,9 +148,15 @@ namespace XMLDoc2Markdown.Extensions
             int portionBreakIndex = pathPortions.TakeWhile(portion => portion.IndexOfAny(s_globWildcards) == -1).Count();
 
             sharedRootDirectory = string.Join('\\', pathPortions, 0, portionBreakIndex);
-            string glob = portionBreakIndex == pathPortions.Length ? string.Empty : string.Join('\\', pathPortions, portionBreakIndex, pathPortions.Length - portionBreakIndex);
-
-            return Glob.Files(sharedRootDirectory, glob);
+            string globPortion = portionBreakIndex == pathPortions.Length ? string.Empty : string.Join('\\', pathPortions, portionBreakIndex, pathPortions.Length - portionBreakIndex);
+            
+            return type switch
+            {
+                FileType.File => Glob.Files(sharedRootDirectory, globPortion),
+                FileType.Directory => Glob.Directories(sharedRootDirectory, globPortion),
+                FileType.FileOrDirectory => Glob.FilesAndDirectories(sharedRootDirectory, globPortion),
+                _ => throw new ArgumentOutOfRangeException(nameof(type))
+            };
         }
 
         public static string ReplaceMany(this string self, ICollection<string> oldValues, ICollection<string> newValues)
